@@ -21,7 +21,7 @@ interface OrdersProps {
   imageUrl?: string; // URL do anexo, se existir
 }
 
-interface UserProps {
+interface PessoaProps {
   id: string;
   name: string;
   apelido: string;
@@ -37,7 +37,7 @@ interface ListaPedidosProps {
 
 const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate }) => {
   // Estados para mapeamento de usuários e funcionários
-  const [userMap, setUserMap] = useState<{ [key: string]: UserProps }>({});
+  const [userMap, setUserMap] = useState<{ [key: string]: PessoaProps }>({});
   const [employeeMap, setEmployeeMap] = useState<{ [key: string]: EmployeeProps }>({});
   const [entreguePorMap, setEntreguePorMap] = useState<{ [key: string]: EmployeeProps }>({});
 
@@ -60,7 +60,7 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate })
   // Buscar dados de usuário, funcionário e entreguePor
   useEffect(() => {
     const fetchData = async () => {
-      const userMapTemp: { [key: string]: UserProps } = {};
+      const userMapTemp: { [key: string]: PessoaProps } = {};
       const employeeMapTemp: { [key: string]: EmployeeProps } = {};
       const entreguePorMapTemp: { [key: string]: EmployeeProps } = {};
 

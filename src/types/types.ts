@@ -8,6 +8,7 @@ export interface OrdersProps {
   userId: string;
   employeeId: string;
   entreguePorId: string;
+  imageUrl: string;
   }
   
 

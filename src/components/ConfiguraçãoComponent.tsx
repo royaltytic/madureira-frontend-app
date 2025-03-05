@@ -70,7 +70,6 @@ const ConfiguracaoComponent: React.FC<ConfiguracaoComponentProps> = ({ usuario, 
       }
 
       if (response.status === 200) {
-        console.log("Perfil atualizado com sucesso:", response.data);
         setUser(response.data);
         onUpdateUser(response.data);
         setAlert({ type: "sucesso", text: "Perfil atualizado com sucesso!" });

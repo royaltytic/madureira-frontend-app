@@ -76,7 +76,9 @@ export const Input = <T extends FieldValues>({
     "Tanque Verde",
     "Taquaris",
     "Terra Nova",
-    "Varzea da Passira"
+    "Varzea da Passira",
+    "Centro",
+    "Outros",
   ];
 
   // Mostra o ícone de arquivo somente se o nome for um dos permitidos

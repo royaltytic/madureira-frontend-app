@@ -1,23 +1,5 @@
 import { z } from "zod";
 
-// Lista de produtos válidos
-const validProducts = [
-  "Bovinos",
-  "Caprinos",
-  "Suíno",
-  "Carne de Frango",
-  "Aves",
-  "Ovinos",
-  "Tubérculos",
-  "Artefatos de Barro",
-  "Frutas",
-  "Verduras",
-  "Calçados",
-  "Alumínios",
-  "Miudezas",
-  "Cestas e Balaios",
-  "Artefatos de Couro e Cordas",
-];
 
 // Helper para validar valores numéricos positivos no campo "imposto"
 const positiveNumber = z
@@ -84,14 +66,14 @@ export const PersonScheme = z
 
     // O campo "produtos" é transformado de string para array, se for informado.
     produtos: z
-      .string()
-      .transform((val) =>
-        val
-          .split(",")
-          .map((produto) => produto.trim())
-          .filter((produto) => produto !== "")
-      )
-      .optional(),
+    .string()
+    .min(1, "Digite pelo menos um produto.") // Garante que tenha pelo menos um produto
+    .transform((val) =>
+      val
+        .split(",") // Divide os produtos pela vírgula
+        .map((produto) => produto.trim()) // Remove espaços extras
+        .filter((produto) => produto.length > 0) // Evita valores vazios
+    ).optional(),
 
     classe: z.array(
       z.enum(["Agricultor", "Pescador", "Feirante", "Outros", "Repartição Pública"])
@@ -179,23 +161,4 @@ export const PersonScheme = z
       }
     }
 
-    // Validação para produtos se a classe for "Feirante"
-    if (data.classe.includes("Feirante")) {
-      if (!data.produtos || data.produtos.length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Digite pelo menos um produto.",
-          path: ["produtos"],
-        });
-      } else {
-        const invalid = data.produtos.filter((produto) => !validProducts.includes(produto));
-        if (invalid.length > 0) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Algum produto é inválido. Escolha itens válidos.",
-            path: ["produtos"],
-          });
-        }
-      }
-    }
   });

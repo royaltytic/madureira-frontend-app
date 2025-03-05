@@ -4,6 +4,9 @@ import api from "../services/api";
 import jsPDF from "jspdf";
 import "jspdf-autotable"; // Importa o plugin para extensão do jsPDF
 import watermarkImage from "../assets/logoIcon.png";
+import { PessoaProps } from "../types/types";
+import { UserProps } from "../types/types";
+import { OrdersProps } from "../types/types";
 
 declare module "jspdf" {
   interface jsPDF {
@@ -11,38 +14,14 @@ declare module "jspdf" {
     autoTable: (options: any) => jsPDF; // Declaração do método autoTable
   }
 }
-interface OrdersProps {
-  servico: string;
-  data: string;
-  dataEntregue: string | null;
-  situacao: string;
-  descricao: string;
-  id: string;
-  userId: string;
-  employeeId: string;
-  entreguePorId: string;
-}
-
-interface UserProps {
-  id: string;
-  name: string;
-  neighborhood: string;
-  referencia: string;
-}
-
-interface userProps {
-  user: string
-  id: string, 
-  
-}
 
 interface PedidosComponentProps {
-  usuario: userProps
+  usuario: UserProps
 }
 
 export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) => {
   const [orders, setOrders] = useState<OrdersProps[]>([]);
-  const [users, setUsers] = useState<UserProps[]>([]);
+  const [users, setUsers] = useState<PessoaProps[]>([]);
   const [selectedService, setSelectedService] = useState("");
   const [selectedSituacao, setSelectedSituacao] = useState("Todos"); // Estado para situação
   const currentDate = new Date();
@@ -101,6 +80,8 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     "Taquaris",
     "Terra Nova",
     "Varzea da Passira",
+    "Centro",
+    "Outros"
 
   ];
 
@@ -236,14 +217,8 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
   const updatePedidoSituacao = async (id: string, situacao: string) => {
     try {
       const dataEntregue = situacao === "Finalizado" ? new Date().toISOString() : null;
-  
-      // Garanta que o id ou user do usuário esteja corretamente preenchido
-      const userId = usuario.id; // ou usuário.user, dependendo do seu caso
-  
       const response = await api.put(`/orders/${id}`, { 
-        usuario: {
-          id: userId, // Envie o id ou user conforme necessário
-        }, 
+        usuario,
         situacao, 
         dataEntregue 
       });

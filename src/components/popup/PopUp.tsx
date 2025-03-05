@@ -1,20 +1,11 @@
 import { useState} from "react";
 import { PedidoItem } from "./PedidoItem";
-interface PedidoProps {
-  servico: string;
-  data: string;
-  dataEntregue: string | null;
-  situacao: string;
-  descricao: string;
-  id: string;
-  userId: string;
-  employeeId: string;
-  entreguePorId: string;
-}
+import { OrdersProps } from "../../types/types";
+
 
 interface PopupProps {
   onClose: () => void;
-  onAddPedido: (novosPedidos: PedidoProps[]) => void;
+  onAddPedido: (novosPedidos: OrdersProps[]) => void;
 }
 
 export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
@@ -45,7 +36,7 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
   };
 
   const handleAddPedidos = () => {
-    const novosPedidos: PedidoProps[] = pedidosSelecionados.map((pedido) => ({
+    const novosPedidos: OrdersProps[] = pedidosSelecionados.map((pedido) => ({
       servico: pedido.servico,
       situacao: situacao,
       descricao: pedido.descricao,
@@ -55,6 +46,7 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
       userId: "",
       employeeId: "",
       entreguePorId: "",
+      imageUrl: "",
     }));
 
     onAddPedido(novosPedidos);

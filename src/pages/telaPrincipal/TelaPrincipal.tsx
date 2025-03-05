@@ -8,6 +8,7 @@ import Sair from "./assets/Sair.png";
 import DB from "./assets/Database.png";
 import Config from "./assets/Settings.png";
 import Funcionarios from "./assets/Pessoas.png";
+import User from "./assets/User.png"
 
 import HomeComponent from "../../components/HomeComponent";
 import { PedidosComponent } from "../../components/PedidosComponent";
@@ -15,6 +16,7 @@ import { CadastroComponent } from "../../components/CadastroComponent";
 import ConfiguracaoComponent from "../../components/ConfiguraçãoComponent";
 import AllUsersTable from "../../components/DataBaseComponent";
 import EmployeeList from "../../components/FuncionariosComponent";
+
 
 export const TelaPrincipal = () => {
   const navigate = useNavigate();
@@ -79,7 +81,7 @@ export const TelaPrincipal = () => {
               style={{ width: isSidebarOpen ? "150px" : "50px", height: isSidebarOpen ? "150px" : "50px" }}
             >
               <img
-                src={userData?.employee?.imgUrl || "./assets/User.png"}
+                src={userData?.employee?.imgUrl? userData?.employee?.imgUrl: User}
                 alt=""
                 className="w-full h-full object-cover"
               />
