@@ -1,9 +1,9 @@
-// Em seu arquivo de configuração da API, por exemplo, services/api.js
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "api-secretaria-agricultura-fn:10000", 
+  baseURL: import.meta.env.VITE_BASE_URL, // Vite usa import.meta.env ao invés de process.env
 });
+
 
 api.interceptors.request.use((config) => {
   const userData = localStorage.getItem("userData");
