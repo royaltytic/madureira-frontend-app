@@ -1,0 +1,124 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: white;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #0c3ea6;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #051840;
+}
+
+@media (max-width: 1024px) {
+  ::-webkit-scrollbar {
+    width: 0;
+  }
+}
+
+* {
+  font-family: "Montserrat", sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+.clip-path-inverted {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 60%);
+  position: relative;
+  top: 0;
+  left: 0;
+}
+
+.custom-select {
+  background-image: url("/src/components/input/assets/seta-baixo.png"); /* Adicione o ícone desejado */
+  background-position: right 1rem center; /* Posiciona a seta */
+  background-repeat: no-repeat;
+  background-size: 16px;
+}
+
+.custom-select-black {
+  background-image: url("/src/components/input/assets/seta-preta.png"); /* Adicione o ícone desejado */
+  background-position: right 1rem center; /* Posiciona a seta */
+  background-repeat: no-repeat;
+  background-size: 16px;
+}
+
+.slick-dotted ul{
+  display: block;
+list-style-type: none;
+text-align: center;
+position: relative;
+top:30px;
+}
+
+.slick-dotted li{
+display: inline-block;
+margin: 0 7px;
+}
+
+.slick-dotted button:focus{
+outline: 0;
+}
+
+.slick-dotted li button{
+width: 16px;
+height: 16px;
+border-radius: 8px;
+color: #d8d8d8;
+border-width: 0;
+background: #d8d8d8;
+opacity: 1;
+cursor: pointer;
+}
+
+li.slick-active button{
+background: #373855;
+color: #373855;
+}
+
+.slick-slide:focus { outline: none; }
+
+.container-slider{
+  overflow:hidden;
+  padding:40px 0;   
+}
+
+.container-slider-single{
+  float: left;
+  background-color:white;
+  text-align: center;
+  padding:15px;
+  border-radius:10px;
+}
+
+.container-slider-single p{
+  margin:15px 0;
+  color:#7E92AC;
+  font-size: 14px;
+}
+
+.slick-slide {
+  margin-left:27px;
+
+}
+
+/* the parent */
+.slick-list {
+  margin-left:-27px;
+ 
+}
