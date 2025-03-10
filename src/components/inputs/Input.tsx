@@ -214,18 +214,19 @@ export const Input = <T extends FieldValues>({
               className="border p-2 w-full mb-4"
             />
             <div className="flex justify-end gap-2">
-              <button
-                onClick={handleAddLocal}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
-              >
-                Adicionar
-              </button>
-              <button
+            <button
                 onClick={() => setIsLocalPopupVisible(false)}
-                className="bg-gray-500 text-white px-4 py-2 rounded"
+                className=" text-black px-4 py-2 rounded"
               >
                 Cancelar
               </button>
+              <button
+                onClick={handleAddLocal}
+                className="bg-gradient-to-r from-[#0E9647] to-[#165C38] text-white px-4 py-2 rounded"
+              >
+                Adicionar
+              </button>
+             
             </div>
           </div>
         </div>
