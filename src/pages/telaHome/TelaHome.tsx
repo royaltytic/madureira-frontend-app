@@ -372,7 +372,7 @@ export const Home: React.FC<HomeProps> = ({
 
       {userData.pnae === "Sim" && (
         <p className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition">
-          🏫 PNAE
+           PNAE
         </p>
       )}
     </div>

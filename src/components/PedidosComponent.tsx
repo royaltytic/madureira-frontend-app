@@ -33,6 +33,8 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
   const [selectedLocal, setSelectedLocal] = useState("");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [, setIsConfirmationPopupOpen] = useState(false);
+  const [localOptions, setLocalOptions] = useState<string[]>([]);  // Estado para localidades
+
 
   const apiServicos = [
     "Água",
@@ -50,40 +52,24 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     "Caderneta de Pescador/a",
   ];
 
-  const localOptions = [
-    "Todos",
-    "Açudinho",
-    "Cachoeira do Catolé",
-    "Cachoeira do cumbe",
-    "Cachoeira do Salobro",
-    "Cachoeira do Sebo/Barragem",
-    "Cachoeira dos Alves",
-    "Gameleira",
-    "Lagoa do Sapo",
-    "Lagoa dos Cavalos",
-    "Lameiro",
-    "Manteiga",
-    "Mocós",
-    "Monjolo",
-    "Pau Santo",
-    "Pitombeira",
-    "Poças de Baixo",
-    "Poças de cima",
-    "Quatis",
-    "Queimados",
-    "Quatro contas",
-    "Serrote",
-    "Sítio Campestre",
-    "Sítio Folha Larga",
-    "Sítio Novo",
-    "Tanque Verde",
-    "Taquaris",
-    "Terra Nova",
-    "Varzea da Passira",
-    "Centro",
-    "Outros"
 
-  ];
+  // Função para buscar localidades da API
+  const fetchLocalidades = async () => {
+    try {
+      const response = await api.get("/localidades");  // Substitua pela rota correta
+      const localidades = response.data.map((item: { localidade: string }) => item.localidade); // Extrai apenas a localidade
+      setLocalOptions(["Todos", ...localidades]);  // Adiciona "Todos" como primeira opção
+    } catch (error) {
+      console.error("Erro ao buscar localidades:", error);
+    }
+  };
+  
+
+  // Chama a função fetchLocalidades quando o componente for montado
+  useEffect(() => {
+    fetchLocalidades();
+  }, []);
+
 
   const getMonthName = (month: string) => {
     const months = [
@@ -309,22 +295,22 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
         </div>
 
         <div className="flex gap-4 items-center">
-          <div className="flex flex-col">
-            <h1 className="text-black font-bold text-2xl mb-2 text-center">Localidade</h1>
-            <select
-              value={selectedLocal}
-              onChange={(e) => setSelectedLocal(e.target.value)}
-              className="border w-[250px] text-white font-semibold rounded-lg px-2 py-1 text-center bg-gradient-to-b from-[#00324C] to-[#191B23] appearance-none cursor-pointer"
-            >
-              <option value="" className="bg-[#191B23] text-white">Selecione a Localidade</option>
-              {localOptions.map((local) => (
-                <option className="bg-[#191B23] text-white" key={local} value={local}>
-                  {local}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="flex flex-col">
+          <h1 className="text-black font-bold text-2xl mb-2 text-center">Localidade</h1>
+          <select
+            value={selectedLocal}
+            onChange={(e) => setSelectedLocal(e.target.value)}
+            className="border w-[250px] text-white font-semibold rounded-lg px-2 py-1 text-center bg-gradient-to-b from-[#00324C] to-[#191B23] appearance-none cursor-pointer"
+          >
+            <option value="" className="bg-[#191B23] text-white">Selecione a Localidade</option>
+            {localOptions.map((local) => (
+              <option className="bg-[#191B23] text-white" key={local} value={local}>
+                {local}
+              </option>
+            ))}
+          </select>
         </div>
+      </div>
 
         <div className="flex flex-col">
           <div className="flex">

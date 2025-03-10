@@ -3,8 +3,9 @@ import { InputType } from "../../enum/input-type";
 import InputMask from "react-input-mask";
 import { FieldErrors, FieldValues, Path, UseFormRegister } from "react-hook-form";
 import arquivo from "../cadastro/assets/archive.png";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PopUpImage } from "../popup/PopUpImage";
+import api from "../../services/api";
 
 interface InputProps<T extends FieldValues> {
   type: InputType;
@@ -34,9 +35,29 @@ export const Input = <T extends FieldValues>({
 }: InputProps<T>) => {
   const [isPopUpVisible, setIsPopUpVisible] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [localOptions, setLocalOptions] = useState<string[]>([]);
+  const [isLocalPopupVisible, setIsLocalPopupVisible] = useState(false);
+  const [newLocalValue, setNewLocalValue] = useState("");
 
-  const getMask = (type: string) => {
-    switch (type) {
+  useEffect(() => {
+    fetchLocalidades();
+  }, []);
+
+  const fetchLocalidades = async () => {
+    try {
+      const response = await api.get("/localidades");
+      const locais = response.data.map(
+        (item: { id: number; localidade: string }) => item.localidade
+      );
+      setLocalOptions(locais);
+      console.log("Valores recebidos:", locais);
+    } catch (error) {
+      console.error("Erro ao buscar localidades:", error);
+    }
+  };
+
+  const getMask = (inputType: string) => {
+    switch (inputType) {
       case InputType.CPF:
         return "999.999.999-99";
       case InputType.Phone:
@@ -45,57 +66,51 @@ export const Input = <T extends FieldValues>({
         return null;
     }
   };
-
   const mask = getMask(type);
 
-  const localOptions = [
-    "Açudinho",
-    "Cachoeira do Catolé",
-    "Cachoeira do cumbe",
-    "Cachoeira do Salobro",
-    "Cachoeira do Sebo/Barragem",
-    "Cachoeira dos Alves",
-    "Gameleira",
-    "Lagoa do Sapo",
-    "Lagoa dos Cavalos",
-    "Lameiro",
-    "Manteiga",
-    "Mocós",
-    "Monjolo",
-    "Pau Santo",
-    "Pitombeira",
-    "Poças de Baixo",
-    "Poças de cima",
-    "Quatis",
-    "Queimados",
-    "Quatro contas",
-    "Serrote",
-    "Sítio Campestre",
-    "Sítio Folha Larga",
-    "Sítio Novo",
-    "Tanque Verde",
-    "Taquaris",
-    "Terra Nova",
-    "Varzea da Passira",
-    "Centro",
-    "Outros",
-  ];
+  const showFileIcon = ["rg", "caf", "car", "rgp"].includes(
+    String(name).toLowerCase()
+  );
 
-  // Mostra o ícone de arquivo somente se o nome for um dos permitidos
-  const showFileIcon = ["rg", "caf", "car", "rgp"].includes(String(name).toLowerCase());
-
-  const openPopUp = () => {
-    setIsPopUpVisible(true);
-  };
-
-  const closePopUp = () => {
-    setIsPopUpVisible(false);
-  };
-
+  const openPopUp = () => setIsPopUpVisible(true);
+  const closePopUp = () => setIsPopUpVisible(false);
   const handleImageUpload = (file: File) => {
     setUploadedFileName(file.name);
     if (onFileUpload) onFileUpload(file);
     closePopUp();
+  };
+
+  const handleAddLocal = async (e: React.FormEvent) => {
+    e.preventDefault(); // Evita o comportamento padrão do form, que pode causar recarregamento da página
+
+    console.log("Adicionando localidade:", newLocalValue);
+    if (!newLocalValue.trim()) return;
+    try {
+      const response = await api.post("/localidades", {
+        localidade: newLocalValue,
+      });
+
+      const novaLocalidade = response.data.localidade;
+      setLocalOptions((prev) => [...prev, novaLocalidade]);
+
+      // Atualiza o campo do formulário para manter a seleção
+      formOnChange({ target: { value: novaLocalidade } });
+
+      setIsLocalPopupVisible(false);
+      setNewLocalValue(""); // Reseta apenas o estado interno do input
+    } catch (error) {
+      console.error("Erro ao adicionar localidade:", error);
+    }
+  };
+
+  const localRegister = register(name);
+  const { onChange: formOnChange, ...restRegister } = localRegister;
+
+  const handleLocalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    formOnChange(e);
+    if (e.target.value === "Outros") {
+      setIsLocalPopupVisible(true);
+    }
   };
 
   return (
@@ -111,13 +126,15 @@ export const Input = <T extends FieldValues>({
           />
         )}
       </label>
+
       {type === InputType.Local ? (
         <select
           className={twMerge(
             "border-b lg:border-2 shadow-2xl border-black lg:rounded-lg px-4 py-2 w-full bg-transparent focus:outline-none lg:focus:border-2 focus:border-black appearance-none relative custom-select-black",
             error[name] ? "border-red-500" : ""
           )}
-          {...register(name)}
+          {...restRegister}
+          onChange={handleLocalChange}
         >
           <option value="">Selecione o Local</option>
           {localOptions.map((local) => (
@@ -125,6 +142,7 @@ export const Input = <T extends FieldValues>({
               {local}
             </option>
           ))}
+          <option value="Outros">Outros</option>
         </select>
       ) : type === InputType.Radio && options ? (
         <div className="flex gap-4">
@@ -163,6 +181,7 @@ export const Input = <T extends FieldValues>({
           {...register(name)}
         />
       )}
+
       {uploadedFileName && (
         <span className="text-sm text-green-500 font-bold ml-4">
           Arquivo enviado: {uploadedFileName}
@@ -173,8 +192,43 @@ export const Input = <T extends FieldValues>({
           {(error[name]?.message as string) || ""}
         </span>
       )}
+
       {isPopUpVisible && (
-        <PopUpImage closePopup={closePopUp} handleImageUpload={handleImageUpload} />
+        <PopUpImage
+          closePopup={closePopUp}
+          handleImageUpload={handleImageUpload}
+        />
+      )}
+
+      {isLocalPopupVisible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded-lg w-80">
+            <h3 className="text-lg font-bold mb-4">
+              Adicionar nova localidade
+            </h3>
+            <input
+              type="text"
+              placeholder="Digite a nova localidade"
+              value={newLocalValue}
+              onChange={(e) => setNewLocalValue(e.target.value)}
+              className="border p-2 w-full mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={handleAddLocal}
+                className="bg-blue-500 text-white px-4 py-2 rounded"
+              >
+                Adicionar
+              </button>
+              <button
+                onClick={() => setIsLocalPopupVisible(false)}
+                className="bg-gray-500 text-white px-4 py-2 rounded"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
