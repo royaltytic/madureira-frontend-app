@@ -52,11 +52,17 @@ export const PersonScheme = z
 
     // Campos opcionais para Agricultor e Feirante
     adagro: z.string().optional(),
+    adagroOption: z.string().optional(),
     garantiaSafra: z.string().optional(),
+    garantiaSafraOption: z.string().optional(),
     chapeuPalha: z.string().optional(),
+    chapeuPalhaOption: z.string().optional(),
     paa: z.string().optional(),
+    paaOption: z.string().optional(),
     pnae: z.string().optional(),
+    pnaeOption: z.string().optional(),
     agua: z.string().optional(),
+    aguaOption: z.string().optional(),
 
     imposto: positiveNumber,
 

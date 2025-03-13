@@ -18,7 +18,7 @@ interface OrdersProps {
   userId: string;
   employeeId: string;
   entreguePorId: string;
-  imageUrl?: string; // URL do anexo, se existir
+  imageUrl?: string;
 }
 
 interface PessoaProps {
@@ -32,32 +32,33 @@ interface PessoaProps {
 interface ListaPedidosProps {
   pedidos: OrdersProps[];
   local: string;
-  onUpdate: (id: string, situacao: string) => void;
+  onUpdate: (id: string, situacao: string) => Promise<void>;
+  selectedOrderIds: string[];
+  toggleOrderSelection: (orderId: string) => void;
+  isSelectionMode: boolean;
 }
 
-const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate }) => {
-  // Estados para mapeamento de usuários e funcionários
+const ListaPedidos: React.FC<ListaPedidosProps> = ({
+  pedidos,
+  local,
+  onUpdate,
+  selectedOrderIds,
+  toggleOrderSelection,
+  isSelectionMode,
+}) => {
   const [userMap, setUserMap] = useState<{ [key: string]: PessoaProps }>({});
   const [employeeMap, setEmployeeMap] = useState<{ [key: string]: EmployeeProps }>({});
   const [entreguePorMap, setEntreguePorMap] = useState<{ [key: string]: EmployeeProps }>({});
-
-  // Estado para tooltips (opcional)
   const [tooltipPedidoId, setTooltipPedidoId] = useState<string | null>(null);
 
   // Estados para modais
-  // Modal de atualização (status + upload)
   const [isUpdatePopupOpen, setIsUpdatePopupOpen] = useState<boolean>(false);
-  // Pedido selecionado para atualização (status e upload)
   const [selectedPedidoForUpdate, setSelectedPedidoForUpdate] = useState<OrdersProps | null>(null);
-  // Modal de exibição da imagem (download/fechar)
   const [selectedPedidoForImage, setSelectedPedidoForImage] = useState<OrdersProps | null>(null);
 
-  // Estado para armazenar o arquivo selecionado no upload (para atualização)
   const [orderImageFile, setOrderImageFile] = useState<File | null>(null);
-  // Estado para controlar o botão de finalização enquanto o upload está ocorrendo
   const [isFinalizing, setIsFinalizing] = useState<boolean>(false);
 
-  // Buscar dados de usuário, funcionário e entreguePor
   useEffect(() => {
     const fetchData = async () => {
       const userMapTemp: { [key: string]: PessoaProps } = {};
@@ -93,7 +94,6 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate })
     fetchData();
   }, [pedidos]);
 
-  // Ordena e agrupa os pedidos (exemplo: por bairro)
   const sortedAndGroupedPedidos = useMemo(() => {
     const grouped = pedidos.reduce<{ [key: string]: OrdersProps[] }>((acc, pedido) => {
       const neighborhood = userMap[pedido.userId]?.neighborhood || "Outros";
@@ -111,34 +111,28 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate })
     );
   }, [pedidos, userMap]);
 
-  // Função para formatar datas
   const formatDate = (dateString: string | null): string =>
     dateString
       ? new Date(dateString).toLocaleDateString("pt-BR", { timeZone: "UTC" })
       : "---";
 
-  // Abre o modal de atualização (status + upload)
   const openUpdatePopup = (pedido: OrdersProps) => {
     setSelectedPedidoForUpdate(pedido);
     setIsUpdatePopupOpen(true);
   };
 
-  // Abre o modal para exibir o anexo (imagem)
   const openImagePopup = (pedido: OrdersProps) => {
     setSelectedPedidoForImage(pedido);
   };
 
-  // Finaliza a atualização (upload de arquivo e mudança de status)
   const finalizeOrder = async () => {
     setIsFinalizing(true);
 
-    // Se houver um arquivo anexado, tenta fazer o upload
     if (orderImageFile) {
       const formData = new FormData();
       formData.append("file", orderImageFile);
 
       try {
-        // Exemplo de endpoint: /upload/order/:id
         await api.post(`/upload/order/${selectedPedidoForUpdate?.id}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
@@ -150,14 +144,11 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate })
       }
     }
 
-    // Determina a nova situação com base na situação atual
     const newSituacao =
       selectedPedidoForUpdate?.situacao === "Aguardando" ? "Finalizado" : "Aguardando";
 
-    // Atualiza o pedido (status e, possivelmente, a URL do anexo se o backend retornar essa info)
     onUpdate(selectedPedidoForUpdate!.id, newSituacao);
 
-    // Limpa os estados
     setIsUpdatePopupOpen(false);
     setSelectedPedidoForUpdate(null);
     setOrderImageFile(null);
@@ -170,27 +161,25 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate })
     setOrderImageFile(null);
   };
 
-  // Número de pedidos visíveis
   const visibleCount = 12;
 
   return (
-    <div className="flex flex-col items-center py-1 px-2">
+    <div className="flex flex-col items-center py-4 px-2">
       {/* Modal de atualização com upload */}
       {isUpdatePopupOpen && selectedPedidoForUpdate && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-            {/* Componente de upload: ao selecionar o arquivo, atualiza o estado orderImageFile */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white p-6 rounded-lg shadow-md w-80 text-center">
             <UploadFileModal onFileSelected={setOrderImageFile} />
             <div className="flex justify-center gap-4 mt-4">
               <button
-                className="bg-gradient-to-r from-[#E03335] to-[#812F2C] text-white font-bold px-4 py-2 rounded"
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded"
                 onClick={cancelUpdate}
               >
                 Cancelar
               </button>
               <button
                 disabled={isFinalizing}
-                className={`bg-gradient-to-r from-[#0E9647] to-[#165C38] text-white font-bold px-4 py-2 rounded ${
+                className={`bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded ${
                   isFinalizing ? "opacity-50 cursor-not-allowed" : ""
                 }`}
                 onClick={finalizeOrder}
@@ -205,44 +194,40 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate })
       {/* Modal para exibir o anexo (imagem do pedido) */}
       {selectedPedidoForImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
           onClick={() => setSelectedPedidoForImage(null)}
         >
           <div
-            className="bg-white p-6 rounded shadow-lg flex flex-col items-center"
+            className="bg-white p-6 rounded shadow-md max-w-lg max-h-[80vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {selectedPedidoForImage.imageUrl ? (
               <>
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                  <div className="bg-white p-4 rounded max-w-lg max-h-[80vh] overflow-auto">
-                    <img
-                      src={selectedPedidoForImage.imageUrl}
-                      alt={`Anexo do pedido de ${selectedPedidoForImage.servico}`}
-                      className="max-w-full max-h-[60vh] object-contain"
-                    />
-                    <div className="flex w-full gap-4 mt-4">
-                      <button
-                        className="bg-gradient-to-r from-[#E03335] to-[#812F2C] text-white font-bold px-4 py-2 rounded w-1/2"
-                        onClick={() => setSelectedPedidoForImage(null)}
-                      >
-                        Fechar
-                      </button>
-                      <a
-                        href={selectedPedidoForImage.imageUrl}
-                        download
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-gradient-to-r from-[#0E9647] to-[#165C38] text-center text-white font-bold px-4 py-2 rounded w-1/2"
-                      >
-                        Baixar
-                      </a>
-                    </div>
-                  </div>
+                <img
+                  src={selectedPedidoForImage.imageUrl}
+                  alt={`Anexo do pedido de ${selectedPedidoForImage.servico}`}
+                  className="max-w-full max-h-[60vh] object-contain mb-4"
+                />
+                <div className="flex gap-4">
+                  <button
+                    className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded w-1/2"
+                    onClick={() => setSelectedPedidoForImage(null)}
+                  >
+                    Fechar
+                  </button>
+                  <a
+                    href={selectedPedidoForImage.imageUrl}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-green-500 hover:bg-green-600 text-center text-white font-semibold px-4 py-2 rounded w-1/2"
+                  >
+                    Baixar
+                  </a>
                 </div>
               </>
             ) : (
-              <p>Comprovante não disponível</p>
+              <p className="text-gray-700">Comprovante não disponível</p>
             )}
           </div>
         </div>
@@ -253,46 +238,53 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate })
           Nenhum pedido disponível no momento.
         </p>
       ) : (
-        <>
-          <table className="w-full border-collapse">
-            <thead>
+        <div className="w-full overflow-x-auto rounded-lg">
+          <table className="min-w-full border border-gray-200 rounded-lg">
+            <thead className="bg-gray-200">
               <tr>
-                {/* Colunas: Nome, Localidade, Solicitado, Entregue e Situação */}
-                <th className="text-2xl pb-4 text-left px-2 pl-4">Nome</th>
-                <th className="text-2xl pb-4 text-left px-2">Localidade</th>
-                <th className="text-2xl pb-4">Descrição</th>
-                <th className="text-2xl pb-4">Solicitado</th>
-                <th className="text-2xl pb-4">Entregue</th>
-                <th className="text-2xl pb-4">Situação</th>
+                {isSelectionMode && <th className="px-4 py-2 border">Selecionar</th>}
+                <th className="px-4 py-2 border">Nome</th>
+                <th className="px-4 py-2 border">Localidade</th>
+                <th className="px-4 py-2 border">Descrição</th>
+                <th className="px-4 py-2 border">Solicitado</th>
+                <th className="px-4 py-2 border">Entregue</th>
+                <th className="px-4 py-2 border">Situação</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white divide-y divide-gray-200">
               {sortedAndGroupedPedidos.slice(0, visibleCount).map((pedido) => {
                 const user = userMap[pedido.userId];
                 return (
-                  <tr key={pedido.id} className="relative">
-                    <td
-                      className="h-7 py-1 px-2 pl-4 text-lg cursor-pointer "
-                      onClick={() => openImagePopup(pedido)}
-                    >
+                  <tr key={pedido.id} className="hover:bg-gray-50">
+                    {isSelectionMode && (
+                      <td className="px-4 py-2 border text-center">
+                        <input
+                          type="checkbox"
+                          className="form-checkbox h-5 w-5 text-blue-500"
+                          checked={selectedOrderIds.includes(pedido.id)}
+                          onChange={() => toggleOrderSelection(pedido.id)}
+                        />
+                      </td>
+                    )}
+                    <td className="px-4 py-2 border text-lg cursor-pointer" onClick={() => openImagePopup(pedido)}>
                       {user ? `${user.name}, ${user.apelido}` : "Carregando..."}
                     </td>
-                    <td className="h-7 py-1 px-2 text-lg">
+                    <td className="px-4 py-2 border text-lg">
                       {local === "Todos"
                         ? `${user?.neighborhood}, ${user?.referencia}`
                         : user?.referencia || "Carregando..."}
                     </td>
-                    <td className="h-7 py-1 px-2 text-lg text-center">
-                        {pedido.descricao ? pedido.descricao : "---"}
+                    <td className="px-4 py-2 border text-lg text-center">
+                      {pedido.descricao ? pedido.descricao : "---"}
                     </td>
                     <td
-                      className="h-7 py-1 px-2 text-lg text-center relative"
+                      className="px-4 py-2 border text-lg text-center relative"
                       onMouseEnter={() => setTooltipPedidoId(`solicitado-${pedido.id}`)}
                       onMouseLeave={() => setTooltipPedidoId(null)}
                     >
                       {formatDate(pedido.data)}
                       {tooltipPedidoId === `solicitado-${pedido.id}` && (
-                        <div className="absolute top-0 left-0 mt-8 p-1 bg-gray-800 text-white text-xs rounded shadow-lg z-50">
+                        <div className="absolute top-full left-0 mt-1 p-1 bg-gray-800 text-white text-xs rounded shadow">
                           <p>
                             Solicitado:{" "}
                             {pedido.employeeId
@@ -303,13 +295,13 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate })
                       )}
                     </td>
                     <td
-                      className="h-7 py-1 px-2 text-lg text-center relative"
+                      className="px-4 py-2 border text-lg text-center relative"
                       onMouseEnter={() => setTooltipPedidoId(`entregue-${pedido.id}`)}
                       onMouseLeave={() => setTooltipPedidoId(null)}
                     >
                       {formatDate(pedido.dataEntregue)}
                       {tooltipPedidoId === `entregue-${pedido.id}` && (
-                        <div className="absolute top-0 left-0 mt-8 p-1 bg-gray-800 text-white text-xs rounded shadow-lg z-50">
+                        <div className="absolute top-full left-0 mt-1 p-1 bg-gray-800 text-white text-xs rounded shadow">
                           <p>
                             Entregue:{" "}
                             {pedido.entreguePorId
@@ -319,14 +311,14 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate })
                         </div>
                       )}
                     </td>
-                    <td className="h-7 flex justify-center">
+                    <td className="px-4 py-2 border text-center">
                       <button
                         onClick={() => openUpdatePopup(pedido)}
                         disabled={pedido.situacao === "Finalizado"}
-                        className={`flex justify-center items-center border w-36 rounded-lg h-8 text-base text-white font-semibold ${
+                        className={`px-4 py-1 w-40 rounded text-white font-semibold transition-colors ${
                           pedido.situacao === "Aguardando"
-                            ? "bg-gradient-to-r from-[#E03335] to-[#812F2C]"
-                            : "bg-gradient-to-r from-[#0E9647] to-[#165C38]"
+                            ? "bg-gradient-to-r from-[#E03335] to-[#812F2C] hover:bg-red-600"
+                            : "bg-gradient-to-r from-[#0E9647] to-[#165C38] hover:bg-green-600"
                         } ${pedido.situacao === "Finalizado" ? "cursor-not-allowed" : ""}`}
                       >
                         {pedido.situacao}
@@ -337,7 +329,7 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({ pedidos, local, onUpdate })
               })}
             </tbody>
           </table>
-        </>
+        </div>
       )}
     </div>
   );

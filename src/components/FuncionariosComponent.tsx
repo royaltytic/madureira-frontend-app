@@ -75,7 +75,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ usuario }) => {
     <div className="min-h-full bg-gray-100">
       {/* Exibe informação do usuário logado */}
       <div className="p-4 bg-white shadow mb-4">
-        <h2 className="text-4xl text-center font-bold text-gray-800">Lista de Funcionários</h2>
+        <h2 className="text-4xl text-center font-bold text-gray-800">Lista de Servidores</h2>
       </div>
 
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -83,7 +83,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ usuario }) => {
         <div className="mb-4">
           <input
             type="text"
-            placeholder="Pesquisar funcionário..."
+            placeholder="Pesquisar servidor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300"
@@ -126,7 +126,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ usuario }) => {
             ))}
           </div>
         ) : (
-          <div className="text-center text-gray-600">Nenhum funcionário encontrado.</div>
+          <div className="text-center text-gray-600">Nenhum servidor encontrado.</div>
         )}
       </div>
 
@@ -136,7 +136,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ usuario }) => {
           <div className="fixed inset-0 bg-black opacity-50"></div>
           <div className="bg-white rounded-lg p-6 z-50 max-w-md mx-auto">
             <p className="mb-4">
-              Realmente deseja alterar o status do funcionário <strong>{employeeToToggle.user}</strong>?
+              Realmente deseja alterar o status do servidor <strong>{employeeToToggle.user}</strong>?
             </p>
             <div className="flex justify-end space-x-2">
             <button

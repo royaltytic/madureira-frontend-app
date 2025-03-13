@@ -47,7 +47,7 @@ export const TelaPrincipal = () => {
   // Adiciona "Funcionários" ao menu apenas se o usuário for secretário
   if (userData?.employee?.tipo === "secretario") {
     menuItems.push({
-      label: "funcionários",
+      label: "Servidores",
       icon: Funcionarios,
       component: <EmployeeList usuario={userData} />,
     });

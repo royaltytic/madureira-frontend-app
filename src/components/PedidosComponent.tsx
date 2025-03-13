@@ -4,26 +4,23 @@ import api from "../services/api";
 import jsPDF from "jspdf";
 import "jspdf-autotable"; // Importa o plugin para extensão do jsPDF
 import watermarkImage from "../assets/logoIcon.png";
-import { PessoaProps } from "../types/types";
-import { UserProps } from "../types/types";
-import { OrdersProps } from "../types/types";
+import { PessoaProps, UserProps, OrdersProps } from "../types/types";
 
 declare module "jspdf" {
   interface jsPDF {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    autoTable: (options: any) => jsPDF; // Declaração do método autoTable
+    autoTable: (options: { head: string[][]; body: string[][]; startY?: number; theme?: string; styles?: Record<string, unknown>; margin?: { top: number; bottom: number }; didDrawPage?: (data: { settings: { margin: { left: number } } }) => void }) => jsPDF;
   }
 }
 
 interface PedidosComponentProps {
-  usuario: UserProps
+  usuario: UserProps;
 }
 
 export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) => {
   const [orders, setOrders] = useState<OrdersProps[]>([]);
   const [users, setUsers] = useState<PessoaProps[]>([]);
   const [selectedService, setSelectedService] = useState("");
-  const [selectedSituacao, setSelectedSituacao] = useState("Todos"); // Estado para situação
+  const [selectedSituacao, setSelectedSituacao] = useState("Todos");
   const currentDate = new Date();
   const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, "0");
   const currentYear = currentDate.getFullYear().toString();
@@ -33,8 +30,14 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
   const [selectedLocal, setSelectedLocal] = useState("");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [, setIsConfirmationPopupOpen] = useState(false);
-  const [localOptions, setLocalOptions] = useState<string[]>([]);  // Estado para localidades
+  const [localOptions, setLocalOptions] = useState<string[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  
+  // Flag que indica se estamos em modo de seleção para o PDF
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
+  // Estado para exibir a modal de opções de download
+  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
 
   const apiServicos = [
     "Água",
@@ -52,24 +55,19 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     "Caderneta de Pescador/a",
   ];
 
-
-  // Função para buscar localidades da API
   const fetchLocalidades = async () => {
     try {
-      const response = await api.get("/localidades");  // Substitua pela rota correta
-      const localidades = response.data.map((item: { localidade: string }) => item.localidade); // Extrai apenas a localidade
-      setLocalOptions(["Todos", ...localidades]);  // Adiciona "Todos" como primeira opção
+      const response = await api.get("/localidades");
+      const localidades = response.data.map((item: { localidade: string }) => item.localidade);
+      setLocalOptions(["Todos", ...localidades]);
     } catch (error) {
       console.error("Erro ao buscar localidades:", error);
     }
   };
-  
 
-  // Chama a função fetchLocalidades quando o componente for montado
   useEffect(() => {
     fetchLocalidades();
   }, []);
-
 
   const getMonthName = (month: string) => {
     const months = [
@@ -100,11 +98,10 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
               ano: selectedYear,
             },
           });
-
           setOrders(ordersResponse.data);
 
           const userIds = [
-            ...new Set(ordersResponse.data.map((order: OrdersProps) => order.userId)),
+            ...new Set(ordersResponse.data.map((order: OrdersProps) => order.userId))
           ];
           const userResponses = await Promise.all(
             userIds.map((userId) =>
@@ -122,7 +119,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
   }, [selectedService, selectedMonth, selectedYear]);
 
   const formatDate = (date: string | null): string => {
-    if (!date) return ""; // Tratamento para datas nulas
+    if (!date) return "";
     const parsedDate = new Date(date);
     const day = String(parsedDate.getDate()).padStart(2, "0");
     const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
@@ -130,7 +127,6 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     return `${day}/${month}/${year}`;
   };
 
-  // Aplica o filtro por localidade e situação
   const filteredOrders = orders.filter((order) => {
     const user = users.find((u) => u.id === order.userId);
     const matchesLocal = selectedLocal === "Todos" || user?.neighborhood === selectedLocal;
@@ -138,12 +134,29 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     return matchesLocal && matchesSituacao;
   });
 
-  const handleDownloadPDF = async () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrderIds((prevSelected) =>
+      prevSelected.includes(orderId)
+        ? prevSelected.filter((id) => id !== orderId)
+        : [...prevSelected, orderId]
+    );
+  };
+
+  // Função para gerar o PDF conforme a opção escolhida
+  const downloadPDF = async (option: "all" | "selected") => {
+    if (option === "selected" && selectedOrderIds.length === 0) {
+      alert("Nenhum pedido selecionado!");
+      return;
+    }
+    setIsSelectionMode(false);
+    setShowDownloadOptions(false);
   
-    // Converter imagem para Base64 e ajustar a opacidade
+    // Cria o documento no formato A4 (pt = pontos)
+    const doc = new jsPDF("p", "pt", "a4");
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+  
+    // Função para converter a imagem para Base64 com opacidade ajustada
     const getTransparentImage = async (imgPath: string, opacity: number): Promise<string> => {
       return new Promise((resolve) => {
         const img = new Image();
@@ -155,33 +168,40 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
           canvas.height = img.height;
           const ctx = canvas.getContext("2d");
           if (ctx) {
-            ctx.globalAlpha = opacity; // Define a transparência
+            ctx.globalAlpha = opacity;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL("image/png")); // Retorna imagem Base64
+            resolve(canvas.toDataURL("image/png"));
           }
         };
       });
     };
   
-    // Obtem a marca d'água com opacidade ajustada
+    // Adiciona uma marca d'água
     const watermarkBase64 = await getTransparentImage(watermarkImage, 0.1);
+    doc.addImage(watermarkBase64, "PNG", 50, 50, pageWidth - 100, pageHeight - 100);
   
-    // Adiciona a imagem como marca d'água ocupando toda a folha
-    doc.addImage(watermarkBase64, "PNG", 0, 0, pageWidth, pageHeight);
-  
-    // Configuração do título
+    // Cabeçalho: título e informações (pode adicionar logo se desejar)
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(40, 40, 40);
+    doc.text("Lista de Pedidos", pageWidth / 2, 40, { align: "center" });
     doc.setFontSize(12);
-    doc.text(`Lista Pedidos de ${selectedService} em ${selectedLocal}`, 14, 20);
+    doc.text(`Serviço: ${selectedService} | Local: ${selectedLocal}`, pageWidth / 2, 60, { align: "center" });
   
-    // Configuração da tabela
-    const tableColumn = ["Nome", "Localidade", "Solicitado", "Entregue", "Situação", "Assinatura"];
+    // Define os pedidos que serão incluídos no PDF
+    const ordersToInclude =
+      option === "all"
+        ? filteredOrders
+        : filteredOrders.filter((order) => selectedOrderIds.includes(order.id));
+  
+    // Prepara os dados da tabela
+    const tableColumn = ["Nome", "Localidade", "Solicitado", "Entregue", "Situação"];
     const tableRows: string[][] = [];
-  
-    filteredOrders.forEach((order) => {
+    ordersToInclude.forEach((order) => {
       const user = users.find((u) => u.id === order.userId);
       const orderData = [
         user?.name || "N/A",
-        `${user?.referencia || "N/A"}`,
+        user?.referencia || "N/A",
         formatDate(order.data),
         formatDate(order.dataEntregue) || "",
         order.situacao,
@@ -189,40 +209,38 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
       tableRows.push(orderData);
     });
   
+    // Configuração do autoTable para personalizar o design da tabela
     doc.autoTable({
+      startY: 80, // Inicia a tabela após o cabeçalho
       head: [tableColumn],
       body: tableRows,
-      startY: 30,
+      theme: "grid",
+      styles: {
+        head: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: "bold",
+          halign: "center",
+        },
+        body: {
+          textColor: 50,
+          halign: "center",
+        },
+        alternateRow: { fillColor: [238, 238, 238] },
+        font: "helvetica",
+        fontSize: 10,
+      },
+      margin: { top: 80, bottom: 40 },
+      didDrawPage: (data) => {
+        // Rodapé com numeração de páginas
+        const pageStr = "Página " + doc.getNumberOfPages();
+        doc.setFontSize(10);
+        doc.text(pageStr, data.settings.margin.left, pageHeight - 10);
+      },
     });
   
-    // Salva o PDF
+    // Salva o PDF com o nome definido
     doc.save("lista-pedidos.pdf");
-  };
-
-
-  const updatePedidoSituacao = async (id: string, situacao: string) => {
-    try {
-      const dataEntregue = situacao === "Finalizado" ? new Date().toISOString() : null;
-      const response = await api.put(`/orders/${id}`, { 
-        usuario,
-        situacao, 
-        dataEntregue 
-      });
-  
-      if (response.status === 200) {
-        setOrders((prevOrders) =>
-          prevOrders.map((order) =>
-            order.id === id ? { ...order, usuario, situacao, dataEntregue } : order
-          )
-        );
-        console.log("Situação do pedido e dataEntregue atualizadas com sucesso!");
-      } else {
-        alert("Falha ao atualizar a situação do pedido.");
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar a situação do pedido:", error);
-      alert("Erro ao atualizar a situação do pedido. Tente novamente.");
-    }
   };
   
 
@@ -233,7 +251,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
 
   return (
     <section className="flex flex-col w-full h-full p-5">
-      {/* Popup de confirmação de seleção */}
+      {/* Modal de seleção de Mês e Ano */}
       {isPopupOpen && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-white w-[270px] mb-60 p-6 rounded-lg shadow-lg">
@@ -253,7 +271,6 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
                   );
                 })}
               </select>
-
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
@@ -276,7 +293,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
         </div>
       )}
 
-
+      {/* Seção de filtros e botões */}
       <div className="flex gap-10 justify-center mb-4">
         <div className="flex flex-col items-center">
           <h1 className="text-black font-bold text-2xl mb-2">Serviço</h1>
@@ -285,7 +302,9 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
             onChange={(e) => setSelectedService(e.target.value)}
             className="border w-[270px] text-white font-semibold rounded-lg px-2 py-1 text-center bg-gradient-to-b from-[#00324C] to-[#191B23] appearance-none cursor-pointer"
           >
-            <option value="" className="bg-[#191B23] text-white">Selecione o Serviço</option>
+            <option value="" className="bg-[#191B23] text-white">
+              Selecione o Serviço
+            </option>
             {apiServicos.map((servico) => (
               <option className="bg-[#191B23] text-white" key={servico} value={servico}>
                 {servico}
@@ -295,22 +314,24 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
         </div>
 
         <div className="flex gap-4 items-center">
-        <div className="flex flex-col">
-          <h1 className="text-black font-bold text-2xl mb-2 text-center">Localidade</h1>
-          <select
-            value={selectedLocal}
-            onChange={(e) => setSelectedLocal(e.target.value)}
-            className="border w-[250px] text-white font-semibold rounded-lg px-2 py-1 text-center bg-gradient-to-b from-[#00324C] to-[#191B23] appearance-none cursor-pointer"
-          >
-            <option value="" className="bg-[#191B23] text-white">Selecione a Localidade</option>
-            {localOptions.map((local) => (
-              <option className="bg-[#191B23] text-white" key={local} value={local}>
-                {local}
+          <div className="flex flex-col">
+            <h1 className="text-black font-bold text-2xl mb-2 text-center">Localidade</h1>
+            <select
+              value={selectedLocal}
+              onChange={(e) => setSelectedLocal(e.target.value)}
+              className="border w-[250px] text-white font-semibold rounded-lg px-2 py-1 text-center bg-gradient-to-b from-[#00324C] to-[#191B23] appearance-none cursor-pointer"
+            >
+              <option value="" className="bg-[#191B23] text-white">
+                Selecione a Localidade
               </option>
-            ))}
-          </select>
+              {localOptions.map((local) => (
+                <option className="bg-[#191B23] text-white" key={local} value={local}>
+                  {local}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
 
         <div className="flex flex-col">
           <div className="flex">
@@ -334,11 +355,12 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
             </svg>
           </div>
           <div className="flex justify-center w-[250px] h-[30px] rounded-lg items-center border-lg bg-gradient-to-b from-[#00324C] to-[#191B23] text-white">
-            <p className="text-lg font-semibold cursor-pointer">{getMonthName(selectedMonth)},  {selectedYear}</p>
+            <p className="text-lg font-semibold cursor-pointer">
+              {getMonthName(selectedMonth)}, {selectedYear}
+            </p>
           </div>
         </div>
 
-        {/* Filtro de Situação */}
         <div className="flex flex-col items-center">
           <h1 className="text-black font-bold text-2xl mb-2">Situação</h1>
           <select
@@ -346,30 +368,111 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
             onChange={(e) => setSelectedSituacao(e.target.value)}
             className="border w-[250px] text-white font-semibold rounded-lg px-2 py-1 text-center bg-gradient-to-b from-[#00324C] to-[#191B23] appearance-none cursor-pointer"
           >
-            <option value="Todos" className="bg-[#191B23] text-white">Todos</option>
-            <option value="Aguardando" className="bg-[#191B23] text-white">Aguardando</option>
-            <option value="Finalizado" className="bg-[#191B23] text-white">Finalizado</option>
+            <option value="Todos" className="bg-[#191B23] text-white">
+              Todos
+            </option>
+            <option value="Aguardando" className="bg-[#191B23] text-white">
+              Aguardando
+            </option>
+            <option value="Finalizado" className="bg-[#191B23] text-white">
+              Finalizado
+            </option>
           </select>
         </div>
+
         <div className="flex flex-col items-center">
           <h1 className="text-black font-bold text-2xl mb-2">Pedidos</h1>
           <button
             className="border w-[250px] text-white font-semibold rounded-lg px-2 py-1 text-center bg-gradient-to-b from-[#0E9647] to-[#165C38] hover:opacity-80"
-            onClick={handleDownloadPDF}
+            onClick={() => setShowDownloadOptions(true)}
           >
             Baixar PDF
           </button>
         </div>
-
-
       </div>
+
+      {/* Modal de opções de download */}
+      {showDownloadOptions && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
+            <h2 className="text-xl font-bold mb-4">Opções de Download</h2>
+            <p className="mb-4">Escolha a opção desejada:</p>
+            <div className="flex justify-around">
+              <button
+                className="bg-gradient-to-b from-[#00324C] to-[#191B23] hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded"
+                onClick={() => downloadPDF("all")}
+              >
+                Toda Lista
+              </button>
+              <button
+                className="bg-gradient-to-b from-[#00324C] to-[#191B23] hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded"
+                onClick={() => {
+                  // Ativa o modo de seleção para exibir os checkboxes
+                  setIsSelectionMode(true);
+                  setShowDownloadOptions(false);
+                }}
+              >
+                Selecionados
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Se estiver em modo de seleção, exibe botões para confirmar ou cancelar */}
+      {isSelectionMode && (
+        <div className="flex gap-4 justify-center mb-4">
+          <button
+            className="bg-gradient-to-r from-[#0E9647] to-[#165C38] hover:bg-green-600 text-white font-semibold px-4 py-2 rounded"
+            onClick={() => downloadPDF("selected")}
+          >
+            Gerar PDF dos Selecionados
+          </button>
+          <button
+            className="bg-gradient-to-r from-[#E03335] to-[#812F2C] hover:bg-red-600 text-white font-semibold px-4 py-2 rounded"
+            onClick={() => {
+              setIsSelectionMode(false);
+              setSelectedOrderIds([]);
+            }}
+          >
+            Cancelar Seleção
+          </button>
+        </div>
+      )}
 
       <div className="border border-black w-full mb-4"></div>
 
-      <div className="w-full h-full bg-white text-black border border-white rounded-2xl shadow-2xl py-3 px-4">
-        <ListaPedidos pedidos={filteredOrders} local={selectedLocal} onUpdate={updatePedidoSituacao} />
+      <div className="w-full h-full">
+        <ListaPedidos
+          pedidos={filteredOrders}
+          local={selectedLocal}
+          onUpdate={async (id, situacao) => {
+            try {
+              const dataEntregue = situacao === "Finalizado" ? new Date().toISOString() : null;
+              const response = await api.put(`/orders/${id}`, { 
+                usuario,
+                situacao, 
+                dataEntregue 
+              });
+              if (response.status === 200) {
+                setOrders((prevOrders) =>
+                  prevOrders.map((order) =>
+                    order.id === id ? { ...order, usuario, situacao, dataEntregue } : order
+                  )
+                );
+              } else {
+                alert("Falha ao atualizar a situação do pedido.");
+              }
+            } catch (error) {
+              console.error("Erro ao atualizar a situação do pedido:", error);
+              alert("Erro ao atualizar a situação do pedido. Tente novamente.");
+            }
+          }}
+          selectedOrderIds={selectedOrderIds}
+          toggleOrderSelection={toggleOrderSelection}
+          isSelectionMode={isSelectionMode}
+        />
       </div>
     </section>
   );
 };
-

@@ -50,7 +50,6 @@ export const Input = <T extends FieldValues>({
         (item: { id: number; localidade: string }) => item.localidade
       );
       setLocalOptions(locais);
-      console.log("Valores recebidos:", locais);
     } catch (error) {
       console.error("Erro ao buscar localidades:", error);
     }
@@ -83,7 +82,6 @@ export const Input = <T extends FieldValues>({
   const handleAddLocal = async (e: React.FormEvent) => {
     e.preventDefault(); // Evita o comportamento padrão do form, que pode causar recarregamento da página
 
-    console.log("Adicionando localidade:", newLocalValue);
     if (!newLocalValue.trim()) return;
     try {
       const response = await api.post("/localidades", {

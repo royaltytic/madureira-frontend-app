@@ -366,6 +366,77 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
                   className="border rounded p-2 w-full"
                 />
               </div>
+              <div className="flex flex-col">
+                <label htmlFor="gta" className="text-lg font-semibold mb-1">CAD ADAGRO</label>
+                <input
+                  type="text"
+                  id="adagro"
+                  name="adagro"
+                  value={formData.adagro}
+                  onChange={handleInputChange}
+                  placeholder="Sim ou Não"
+                  className="border rounded p-2 w-full"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="gta" className="text-lg font-semibold mb-1">Garantia Safra</label>
+                <input
+                  type="text"
+                  id="garantiaSafra"
+                  name="garantiaSafra"
+                  value={formData.garantiaSafra}
+                  onChange={handleInputChange}
+                  placeholder="Garantia Safra"
+                  className="border rounded p-2 w-full"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="gta" className="text-lg font-semibold mb-1">Chapéu de Palha</label>
+                <input
+                  type="text"
+                  id="chapeuPalha"
+                  name="chapeuPalha"
+                  value={formData.chapeuPalha}
+                  onChange={handleInputChange}
+                  placeholder="Chapéu de Palha"
+                  className="border rounded p-2 w-full"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="gta" className="text-lg font-semibold mb-1">PAA</label>
+                <input
+                  type="text"
+                  id="paa"
+                  name="paa"
+                  value={formData.paa}
+                  onChange={handleInputChange}
+                  placeholder="PAA"
+                  className="border rounded p-2 w-full"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="gta" className="text-lg font-semibold mb-1">PNAE</label>
+                <input
+                  type="text"
+                  id="pnae"
+                  name="pnae"
+                  value={formData.pnae}
+                  onChange={handleInputChange}
+                  placeholder="PNAE"
+                  className="border rounded p-2 w-full"
+                />
+              </div>              <div className="flex flex-col">
+                <label htmlFor="gta" className="text-lg font-semibold mb-1">SSA Água</label>
+                <input
+                  type="text"
+                  id="agua"
+                  name="agua"
+                  value={formData.agua}
+                  onChange={handleInputChange}
+                  placeholder="Sim ou Não"
+                  className="border rounded p-2 w-full"
+                />
+              </div>
             </div>
           )}
 

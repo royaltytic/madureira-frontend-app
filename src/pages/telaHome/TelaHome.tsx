@@ -86,22 +86,22 @@ export const Home: React.FC<HomeProps> = ({
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
 
-    // Estado para exibir alerta personalizado
-    const [alert, setAlert] = useState<{
-      type: "alerta" | "error" | "info" | "sucesso";
-      text: string;
-    } | null>(null);
-  
-    const showAlert = (
-      type: "alerta" | "error" | "info" | "sucesso",
-      text: string
-    ) => {
-      setAlert({ type, text });
-    };
-  
-    const closeAlert = () => {
-      setAlert(null);
-    };
+  // Estado para exibir alerta personalizado
+  const [alert, setAlert] = useState<{
+    type: "alerta" | "error" | "info" | "sucesso";
+    text: string;
+  } | null>(null);
+
+  const showAlert = (
+    type: "alerta" | "error" | "info" | "sucesso",
+    text: string
+  ) => {
+    setAlert({ type, text });
+  };
+
+  const closeAlert = () => {
+    setAlert(null);
+  };
 
   const openPopUp = () => {
     setIsPopUpOpen(true);
@@ -130,20 +130,20 @@ export const Home: React.FC<HomeProps> = ({
   };
 
   const salvarPedido = async (novosPedidos: OrdersProps[]) => {
-  try {
-    const response = await api.put("/users", {
-      usuario,
-      id,
-      orders: novosPedidos,
-    });
+    try {
+      const response = await api.put("/users", {
+        usuario,
+        id,
+        orders: novosPedidos,
+      });
 
-    // Atualiza o estado local com os pedidos retornados pela API (incluindo o novo pedido)
-    setOrder(response.data.orders);
-  } catch (error) {
-    console.error("Erro ao salvar pedidos:", error);
-    showAlert("error","Erro ao salvar pedidos. Tente novamente.");
-  }
-};
+      // Atualiza o estado local com os pedidos retornados pela API (incluindo o novo pedido)
+      setOrder(response.data.orders);
+    } catch (error) {
+      console.error("Erro ao salvar pedidos:", error);
+      showAlert("error", "Erro ao salvar pedidos. Tente novamente.");
+    }
+  };
 
 
   const updatePedidoSituacao = async (id: string, situacao: string) => {
@@ -165,7 +165,7 @@ export const Home: React.FC<HomeProps> = ({
       }
     } catch (error) {
       console.error("Erro ao atualizar a situação do pedido:", error);
-      showAlert("error","Erro ao atualizar a situação do pedido. Tente novamente.");
+      showAlert("error", "Erro ao atualizar a situação do pedido. Tente novamente.");
     }
   };
 
@@ -252,34 +252,34 @@ export const Home: React.FC<HomeProps> = ({
                       Referência: <span className="ml-1">{userData.referencia}</span>
                     </p>
                   </>
-                )  :( <><p className="my-2 text-base">
-                    Nome: <span className="ml-1">{userData.name}</span>
+                ) : (<><p className="my-2 text-base">
+                  Nome: <span className="ml-1">{userData.name}</span>
+                </p><p className="my-2 text-base">
+                    Apelido: <span className="ml-1">{userData.apelido}</span>
                   </p><p className="my-2 text-base">
-                      Apelido: <span className="ml-1">{userData.apelido}</span>
-                    </p><p className="my-2 text-base">
-                      Classe:{" "}
-                      <span className="ml-1">
-                        {Array.isArray(userData.classe) && userData.classe.length > 0
-                          ? userData.classe.join(", ")
-                          : userData.classe || "não possui"}
-                      </span>
-                    </p><p className="my-2 text-base">
-                      CPF: <span className="ml-1">{userData.cpf}</span>
-                    </p><div className="cursor-pointer" onClick={() => userData.rgImageUrl && openImageModal(userData.rgImageUrl)}>
-                      <p className="my-2 text-base flex">
-                        RG: <span className="ml-1">{userData.rg}</span>
-                      </p>
-                    </div><p className="my-2 text-base">
-                      Telefone: <span className="ml-1">{userData.phone}</span>
-                    </p><p className="my-2 text-base">
-                      Localidade:{" "}
-                      <span className="ml-1">{userData.neighborhood}</span>
-                    </p><p className="my-2 text-base">
-                      Referência: <span className="ml-1">{userData.referencia}</span>
-                    </p></>)
+                    Classe:{" "}
+                    <span className="ml-1">
+                      {Array.isArray(userData.classe) && userData.classe.length > 0
+                        ? userData.classe.join(", ")
+                        : userData.classe || "não possui"}
+                    </span>
+                  </p><p className="my-2 text-base">
+                    CPF: <span className="ml-1">{userData.cpf}</span>
+                  </p><div className="cursor-pointer" onClick={() => userData.rgImageUrl && openImageModal(userData.rgImageUrl)}>
+                    <p className="my-2 text-base flex">
+                      RG: <span className="ml-1">{userData.rg}</span>
+                    </p>
+                  </div><p className="my-2 text-base">
+                    Telefone: <span className="ml-1">{userData.phone}</span>
+                  </p><p className="my-2 text-base">
+                    Localidade:{" "}
+                    <span className="ml-1">{userData.neighborhood}</span>
+                  </p><p className="my-2 text-base">
+                    Referência: <span className="ml-1">{userData.referencia}</span>
+                  </p></>)
               }
 
-              
+
 
               {(userData.classe.includes("Agricultor") ||
                 userData.classe.includes("Pescador")) && (
@@ -336,48 +336,67 @@ export const Home: React.FC<HomeProps> = ({
             </div>
 
             {(userData.classe.includes("Agricultor") ||
-  userData.classe.includes("Pescador")) && (
-  <div className="w-[400px] bg-white text-black border border-gray-200 rounded-xl mt-3 py-4 px-5 shadow-lg">
-    <h2 className="text-2xl font-bold mb-3 text-gray-700">Benefícios</h2>
-    <div className="grid grid-cols-2 gap-2">
-      {userData.garantiaSafra === "Sim" && (
-        <p className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition">
-           Garantia Safra
-        </p>
-      )}
+              userData.classe.includes("Pescador")) && (
+                <div className="w-[400px] bg-white text-black border border-gray-200 rounded-xl mt-3 py-4 px-5 shadow-lg">
+                  <h2 className="text-2xl font-bold mb-3 text-gray-700">Benefícios</h2>
+                  <div className="grid grid-cols-2 gap-2">
+                    {userData.garantiaSafra && (
+                      <p
+                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        title={`${userData.garantiaSafra}`}
+                      >
+                        Garantia Safra
+                      </p>
+                    )}
 
-      {userData.chapeuPalha === "Sim" && (
-        <p className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition">
-           Chapéu de Palha
-        </p>
-      )}
+                    {userData.chapeuPalha && (
+                      <p
+                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        title={`${userData.chapeuPalha}`}
+                      >
+                        Chapéu de Palha
+                      </p>
+                    )}
 
-      {userData.agua === "Sim" && (
-        <p className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition">
-           Água
-        </p>
-      )}
+                    {userData.agua && (
+                      <p
+                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        title="Possui acesso à água"
+                      >
+                        Água
+                      </p>
+                    )}
 
-      {userData.adagro === "Sim" && (
-        <p className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition">
-           ADAGRO
-        </p>
-      )}
+                    {userData.adagro && (
+                      <p
+                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        title="Possui CAD ADAGRO"
+                      >
+                        ADAGRO
+                      </p>
+                    )}
 
-      {userData.paa === "Sim" && (
-        <p className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition">
-           PAA
-        </p>
-      )}
+                    {userData.paa && (
+                      <p
+                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        title={`${userData.paa}`}
+                      >
+                        PAA
+                      </p>
+                    )}
 
-      {userData.pnae === "Sim" && (
-        <p className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition">
-           PNAE
-        </p>
-      )}
-    </div>
-  </div>
-)}
+                    {userData.pnae && (
+                      <p
+                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        title={`${userData.pnae}`}
+                      >
+                        PNAE
+                      </p>
+                    )}
+
+                  </div>
+                </div>
+              )}
 
             <div className="mt-3 w-[400px] flex justify-between items-center gap-5">
               <Button

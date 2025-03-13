@@ -28,6 +28,15 @@ export const CadastroComponent = () => {
   // Estado para armazenar os arquivos de imagem para cada campo (ex.: "rg", "caf", "car", "rgp")
   const [imageFiles, setImageFiles] = useState<{ [key: string]: File }>({});
 
+  // Monitorar opções selecionadas
+  const adagroOption = watch("adagroOption");
+  const garantiaSafraOption = watch("garantiaSafraOption");
+  const chapeuPalhaOption = watch("chapeuPalhaOption");
+  const paaOption = watch("paaOption");
+  const pnaeOption = watch("pnaeOption");
+  const aguaOption = watch("aguaOption");
+
+
   const cancelar = () => {
     reset();
     setStep(1);
@@ -70,9 +79,35 @@ export const CadastroComponent = () => {
   };
 
   const onSubmit = async (data: FormPerson) => {
+
+    const {
+      adagroOption,
+      garantiaSafraOption,
+      garantiaSafra,
+      chapeuPalhaOption,
+      chapeuPalha,
+      paaOption,
+      paa,
+      pnaeOption,
+      pnae,
+      aguaOption,
+      ...rest
+    } = data;
+
+    const payload = {
+      ...rest,
+      adagro: adagroOption === "Sim" ? adagroOption : null,
+      garantiaSafra: garantiaSafraOption === "Sim" ? garantiaSafra : null,
+      chapeuDePalha: chapeuPalhaOption === "Sim" ? chapeuPalha : null,
+      paa: paaOption === "Sim" ? paa : null,
+      pnae: pnaeOption === "Sim" ? pnae : null,
+      agua: aguaOption === "Sim" ? aguaOption : null,
+    };
+
+
     try {
       // Cria o usuário (sem os dados de imagem)
-      const response = await api.post("/users", data);
+      const response = await api.post("/users", payload);
       if (response.status === 201) {
         const userId = response.data.id;
 
@@ -335,56 +370,149 @@ export const CadastroComponent = () => {
                       onFileUpload={handleFileUploadForField("car")}
                     />
                   </div>
-                  <div className="flex gap-6 mt-10">
-                    <Input
-                      type={InputType.Radio}
-                      label="Possui ADAGRO?"
-                      error={errors}
-                      register={register}
-                      name="adagro"
-                      options={["Sim", "Não"]}
-                    />
-                    <Input
-                      type={InputType.Radio}
-                      label="Garantia Safra?"
-                      error={errors}
-                      register={register}
-                      name="garantiaSafra"
-                      options={["Sim", "Não"]}
-                    />
-                    <Input
-                      type={InputType.Radio}
-                      label="Chapéu de Palha?"
-                      error={errors}
-                      register={register}
-                      name="chapeuPalha"
-                      options={["Sim", "Não"]}
-                    />
-                    <Input
-                      type={InputType.Radio}
-                      label="Beneficiário PAA?"
-                      error={errors}
-                      register={register}
-                      name="paa"
-                      options={["Sim", "Não"]}
-                    />
-                    <Input
-                      type={InputType.Radio}
-                      label="Beneficiário PNAE?"
-                      error={errors}
-                      register={register}
-                      name="pnae"
-                      options={["Sim", "Não"]}
-                    />
-                    <Input
-                      type={InputType.Radio}
-                      label="SSA ÁGUA?"
-                      error={errors}
-                      register={register}
-                      name="agua"
-                      options={["Sim", "Não"]}
-                    />
+                  <div className="grid grid-cols-6 gap-6 mt-10">
+                    {/* CAD ADAGRO */}
+                    <div className="flex flex-col">
+                      <Input
+                        type={InputType.Radio}
+                        label="Possui CAD ADAGRO?"
+                        error={errors}
+                        register={register}
+                        name="adagroOption"
+                        options={["Sim", "Não"]}
+                      />
+
+                      {adagroOption === "Sim" && (
+                        <div className="hidden">
+                          <Input
+                            type={InputType.Text}
+                            label=""
+                            error={errors}
+                            register={register}
+                            name="adagro"
+                            placeholder="Ano"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Garantia Safra */}
+                    <div className="flex flex-col">
+                      <Input
+                        type={InputType.Radio}
+                        label="Garantia Safra?"
+                        error={errors}
+                        register={register}
+                        name="garantiaSafraOption"
+                        options={["Sim", "Não"]}
+                      />
+                      {garantiaSafraOption === "Sim" && (
+                        <Input
+                          type={InputType.Text}
+                          label=""
+                          error={errors}
+                          register={register}
+                          name="garantiaSafra"
+                          placeholder="Ano"
+                        />
+                      )}
+                    </div>
+
+                    {/* Chapéu de Palha */}
+                    <div className="flex flex-col">
+                      <Input
+                        type={InputType.Radio}
+                        label="Chapéu de Palha?"
+                        error={errors}
+                        register={register}
+                        name="chapeuPalhaOption"
+                        options={["Sim", "Não"]}
+                      />
+                      {chapeuPalhaOption === "Sim" && (
+                        <Input
+                          type={InputType.Text}
+                          label=""
+                          error={errors}
+                          register={register}
+                          name="chapeuPalha"
+                          placeholder="Ano"
+                        />
+                      )}
+                    </div>
+
+                    {/* PAA */}
+                    <div className="flex flex-col">
+                      <Input
+                        type={InputType.Radio}
+                        label="PAA?"
+                        error={errors}
+                        register={register}
+                        name="paaOption"
+                        options={["Sim", "Não"]}
+                      />
+                      {paaOption === "Sim" && (
+                        <Input
+                          type={InputType.Text}
+                          label=""
+                          error={errors}
+                          register={register}
+                          name="paa"
+                          placeholder="Vinculação"
+                        />
+                      )}
+                    </div>
+
+                    {/* PNAE */}
+                    <div className="flex flex-col">
+                      <Input
+                        type={InputType.Radio}
+                        label="PNAE?"
+                        error={errors}
+                        register={register}
+                        name="pnaeOption"
+                        options={["Sim", "Não"]}
+                      />
+                      {pnaeOption === "Sim" && (
+                        <Input
+                          type={InputType.Text}
+                          label=""
+                          error={errors}
+                          register={register}
+                          name="pnae"
+                          placeholder="Vinculação"
+                        />
+                      )}
+                    </div>
+
+                    {/* SSA ÁGUA */}
+                    <div className="flex flex-col">
+                      <Input
+                        type={InputType.Radio}
+                        label="SSA ÁGUA?"
+                        error={errors}
+                        register={register}
+                        name="aguaOption"
+                        options={["Sim", "Não"]}
+                      />
+                      {aguaOption === "Sim" && (
+                        <div className="hidden">
+                          <Input
+                            type={InputType.Text}
+                            label=""
+                            error={errors}
+                            register={register}
+                            name="agua"
+                            placeholder="Ano"
+                          />
+                        </div>
+                      
+                        
+                      )}
+
+                    </div>
+
                   </div>
+
                 </div>
               )}
 
