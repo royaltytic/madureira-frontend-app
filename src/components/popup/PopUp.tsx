@@ -1,7 +1,6 @@
-import { useState} from "react";
+import { useState } from "react";
 import { PedidoItem } from "./PedidoItem";
 import { OrdersProps } from "../../types/types";
-
 
 interface PopupProps {
   onClose: () => void;
@@ -13,6 +12,7 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
     { servico: string; descricao: string }[]
   >([]);
   const [situacao] = useState("Aguardando");
+  const [dataPedido, setDataPedido] = useState(new Date().toISOString().split("T")[0]);
 
   const handlePedidoSelect = (servico: string, selected: boolean) => {
     setPedidosSelecionados((prev) => {
@@ -41,7 +41,7 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
       situacao: situacao,
       descricao: pedido.descricao,
       dataEntregue: null,
-      data: new Date().toISOString(),
+      data: dataPedido,
       id: "",
       userId: "",
       employeeId: "",
@@ -72,9 +72,16 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg w-[550px] max-h-min transform transition-transform duration-300 scale-100 opacity-100">
-        <div className="flex items-center justify-center p-5 rounded-t-lg">
-          <h1 className="text-black font-bold text-2xl">Novo Pedido</h1>
+        <div className="flex w-full items-center justify-center gap-5 p-5 rounded-t-lg">
+          <h1 className="text-black font-bold text-2xl">Novo Pedido </h1>
+          <input
+            type="date"
+            value={dataPedido}
+            onChange={(e) => setDataPedido(e.target.value)}
+            className="border rounded-md px-2 py-1"
+          />
         </div>
+        
 
         <div className="overflow-y-auto px-5">
           {pedidos.map((pedido, index) => {
@@ -98,7 +105,9 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
           })}
         </div>
 
-        <div className="flex items-center justify-center mt-1">
+        
+
+        <div className="flex items-center justify-center mt-4">
           <p
             onClick={onClose}
             className="text-black font-bold flex items-center justify-center m-6 hover:cursor-pointer"

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 
 interface PessoaProps {
@@ -16,6 +16,7 @@ interface PessoaProps {
   referencia: string;
   adagro: string;
   classe: string[];
+  associacao: string;
   chapeuPalha: string;
   garantiaSafra: string;
   paa: string;
@@ -33,36 +34,7 @@ interface PopUpProps {
   onUpdate: (updatedData: PessoaProps) => void;
 }
 
-const apiLocalOptions = [
-  "Açudinho",
-  "Cachoeira do Catolé",
-  "Cachoeira do cumbe",
-  "Cachoeira do Salobro",
-  "Cachoeira do Sebo/Barragem",
-  "Cachoeira dos Alves",
-  "Gameleira",
-  "Lagoa do Sapo",
-  "Lagoa dos Cavalos",
-  "Lameiro",
-  "Manteiga",
-  "Mocós",
-  "Monjolo",
-  "Pau Santo",
-  "Pitombeira",
-  "Poças de Baixo",
-  "Poças de cima",
-  "Quatis",
-  "Queimados",
-  "Quatro contas",
-  "Serrote",
-  "Sítio Campestre",
-  "Sítio Folha Larga",
-  "Sítio Novo",
-  "Tanque Verde",
-  "Taquaris",
-  "Terra Nova",
-  "Varzea da Passira"
-];
+
 
 export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
   id,
@@ -79,6 +51,7 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
   referencia,
   adagro,
   classe,
+  associacao,
   chapeuPalha,
   garantiaSafra,
   paa,
@@ -106,7 +79,8 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
     neighborhood,
     referencia,
     adagro,
-    classe,
+    classe: Array.isArray(classe) ? classe : [],
+    associacao,
     chapeuPalha,
     garantiaSafra,
     paa,
@@ -119,12 +93,34 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
     produtos,
   });
 
+  const [apiLocalOptions, setApiLocalOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchLocalidades();
+  }, []);
+
+  const fetchLocalidades = async () => {
+    try {
+      const response = await api.get("/localidades");
+      const locais = response.data.map(
+        (item: { id: number; localidade: string }) => item.localidade
+      );
+      setApiLocalOptions(locais);
+    } catch (error) {
+      console.error("Erro ao buscar localidades:", error);
+    }
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "classe" ? value.split(",").map((c) => c.trim()) : value, // Transforma de volta para array
+    }));
   };
+
 
   const handleSave = async () => {
     try {
@@ -175,12 +171,25 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
                   type="text"
                   id="classe"
                   name="classe"
-                  value={formData.classe.join(", ")}
+                  value={Array.isArray(formData.classe) ? formData.classe.join(", ") : ""}
                   onChange={handleInputChange}
                   placeholder="Classe"
                   className="border rounded p-2 w-full"
                 />
+
               </div>
+              <div className="flex flex-col">
+                  <label htmlFor="associacao" className="text-lg font-semibold mb-1">Associação</label>
+                  <input
+                    type="text"
+                    id="associacao"
+                    name="associacao"
+                    value={formData.associacao}
+                    onChange={handleInputChange}
+                    placeholder="Associação"
+                    className="border rounded p-2 w-full"
+                  />
+                </div>
               <div className="flex flex-col">
                 <label htmlFor="referencia" className="text-lg font-semibold mb-1">Referência</label>
                 <input
@@ -283,6 +292,18 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
                     value={formData.classe.join(", ")}
                     onChange={handleInputChange}
                     placeholder="Classe"
+                    className="border rounded p-2 w-full"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label htmlFor="associacao" className="text-lg font-semibold mb-1">Associação</label>
+                  <input
+                    type="text"
+                    id="associacao"
+                    name="associacao"
+                    value={formData.associacao}
+                    onChange={handleInputChange}
+                    placeholder="Associação"
                     className="border rounded p-2 w-full"
                   />
                 </div>

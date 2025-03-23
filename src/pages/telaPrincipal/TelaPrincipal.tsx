@@ -1,20 +1,20 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import Home from "./assets/Home.png";
+import Dashboard from "./assets/Dashboard.png";
 import Pedidos from "./assets/Pedidos.png";
 import Cadastro from "./assets/Cadastro.png";
 import Sair from "./assets/Sair.png";
-import DB from "./assets/Database.png";
+import DB from "./assets/Pessoas.png";
 import Config from "./assets/Settings.png";
 import Funcionarios from "./assets/Pessoas.png";
 import User from "./assets/User.png"
 
-import HomeComponent from "../../components/HomeComponent";
+import { DashboardComponent } from "../../components/dashboard/DashboardComponent";
 import { PedidosComponent } from "../../components/PedidosComponent";
 import { CadastroComponent } from "../../components/CadastroComponent";
 import ConfiguracaoComponent from "../../components/ConfiguraçãoComponent";
-import AllUsersTable from "../../components/DataBaseComponent";
+import DataBaseComponent from "../../components/DataBaseComponent";
 import EmployeeList from "../../components/FuncionariosComponent";
 
 
@@ -26,12 +26,12 @@ export const TelaPrincipal = () => {
   const [userData, setUserData] = useState(location.state?.userData);
 
   const menuItems = [
-    { label: "inicio", icon: Home, component: <HomeComponent usuario={userData} /> },
-    { label: "pedidos", icon: Pedidos, component: <PedidosComponent usuario={userData} /> },
-    { label: "cadastrar", icon: Cadastro, component: <CadastroComponent /> },
-    { label: "banco", icon: DB, component: <AllUsersTable /> },
+    { label: "Dashboard", icon: Dashboard, component: <DashboardComponent /> },
+    { label: "Pedidos", icon: Pedidos, component: <PedidosComponent usuario={userData} /> },
+    { label: "Usuários", icon: DB, component: <DataBaseComponent usuario={userData} /> },
+    { label: "Cadastrar", icon: Cadastro, component: <CadastroComponent /> },
     {
-      label: "configuração",
+      label: "Configuração",
       icon: Config,
       component: (
         <ConfiguracaoComponent
@@ -54,7 +54,7 @@ export const TelaPrincipal = () => {
   }
 
   const [ComponenteAtual, setComponenteAtual] = useState<JSX.Element>(
-    <HomeComponent usuario={userData} />
+    <DashboardComponent />
   );
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -127,7 +127,7 @@ export const TelaPrincipal = () => {
           <div className="flex items-center justify-center w-[70px]">
             <img src={Sair} alt="sair" className="w-8 h-8" />
           </div>
-          {isSidebarOpen && <p className="font-bold text-2xl text-white">sair</p>}
+          {isSidebarOpen && <p className="font-bold text-2xl text-white">Sair</p>}
         </div>
       </div>
 

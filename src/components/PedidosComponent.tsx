@@ -2,13 +2,23 @@ import { useState, useEffect } from "react";
 import ListaPedidos from "./pedidos/ListaPedidos";
 import api from "../services/api";
 import jsPDF from "jspdf";
-import "jspdf-autotable"; // Importa o plugin para extensão do jsPDF
+import "jspdf-autotable"; // Plugin para criação de tabelas no jsPDF
 import watermarkImage from "../assets/logoIcon.png";
 import { PessoaProps, UserProps, OrdersProps } from "../types/types";
+import BulkFinalizeModal from "./popup/BulkFinalizeModal";
+import Alert from "./alerts/alertDesktop";
 
 declare module "jspdf" {
   interface jsPDF {
-    autoTable: (options: { head: string[][]; body: string[][]; startY?: number; theme?: string; styles?: Record<string, unknown>; margin?: { top: number; bottom: number }; didDrawPage?: (data: { settings: { margin: { left: number } } }) => void }) => jsPDF;
+    autoTable: (options: {
+      head: string[][];
+      body: string[][];
+      startY?: number;
+      theme?: string;
+      styles?: Record<string, unknown>;
+      margin?: { top: number; bottom: number };
+      didDrawPage?: (data: { settings: { margin: { left: number } } }) => void;
+    }) => jsPDF;
   }
 }
 
@@ -17,27 +27,32 @@ interface PedidosComponentProps {
 }
 
 export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) => {
+
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertType, setAlertType] = useState<"alerta" | "error" | "info" | "sucesso">("info");
+  const [alertText, setAlertText] = useState("");
+
+  // Estados para armazenar pedidos e usuários
   const [orders, setOrders] = useState<OrdersProps[]>([]);
   const [users, setUsers] = useState<PessoaProps[]>([]);
+
+  // Estados dos filtros
   const [selectedService, setSelectedService] = useState("");
   const [selectedSituacao, setSelectedSituacao] = useState("Todos");
+  const [selectedLocal, setSelectedLocal] = useState("");
+
+  // Estados de data (mês/ano)
   const currentDate = new Date();
   const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, "0");
   const currentYear = currentDate.getFullYear().toString();
-
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [selectedLocal, setSelectedLocal] = useState("");
+
+  // Outros estados
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [, setIsConfirmationPopupOpen] = useState(false);
   const [localOptions, setLocalOptions] = useState<string[]>([]);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
-  
-  // Flag que indica se estamos em modo de seleção para o PDF
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-
-  // Estado para exibir a modal de opções de download
-  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+  const [isBulkFinalizeModalOpen, setIsBulkFinalizeModalOpen] = useState(false);
 
   const apiServicos = [
     "Água",
@@ -55,6 +70,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     "Caderneta de Pescador/a",
   ];
 
+  // Busca localidades
   const fetchLocalidades = async () => {
     try {
       const response = await api.get("/localidades");
@@ -87,6 +103,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     return months[parseInt(month) - 1];
   };
 
+  // Busca pedidos e usuários conforme os filtros selecionados
   useEffect(() => {
     const fetchOrdersAndUsers = async () => {
       try {
@@ -100,13 +117,9 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
           });
           setOrders(ordersResponse.data);
 
-          const userIds = [
-            ...new Set(ordersResponse.data.map((order: OrdersProps) => order.userId))
-          ];
+          const userIds = Array.from(new Set(ordersResponse.data.map((order: OrdersProps) => order.userId)));
           const userResponses = await Promise.all(
-            userIds.map((userId) =>
-              api.get(`/users/${userId}`).then((res) => res.data)
-            )
+            userIds.map((userId) => api.get(`/users/${userId}`).then((res) => res.data))
           );
           setUsers(userResponses);
         }
@@ -118,6 +131,17 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     fetchOrdersAndUsers();
   }, [selectedService, selectedMonth, selectedYear]);
 
+  const showAlert = (type: "alerta" | "error" | "info" | "sucesso", text: string) => {
+    setAlertType(type);
+    setAlertText(text);
+    setAlertVisible(true);
+  };
+
+  const closeAlert = () => {
+    setAlertVisible(false);
+  };
+
+  // Formata a data para dd/mm/yyyy
   const formatDate = (date: string | null): string => {
     if (!date) return "";
     const parsedDate = new Date(date);
@@ -127,6 +151,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     return `${day}/${month}/${year}`;
   };
 
+  // Filtra pedidos conforme local e situação
   const filteredOrders = orders.filter((order) => {
     const user = users.find((u) => u.id === order.userId);
     const matchesLocal = selectedLocal === "Todos" || user?.neighborhood === selectedLocal;
@@ -134,6 +159,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     return matchesLocal && matchesSituacao;
   });
 
+  // Alterna a seleção de um pedido
   const toggleOrderSelection = (orderId: string) => {
     setSelectedOrderIds((prevSelected) =>
       prevSelected.includes(orderId)
@@ -142,21 +168,37 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     );
   };
 
-  // Função para gerar o PDF conforme a opção escolhida
-  const downloadPDF = async (option: "all" | "selected") => {
-    if (option === "selected" && selectedOrderIds.length === 0) {
-      alert("Nenhum pedido selecionado!");
+
+  const openBulkFinalizeModal = () => {
+    if (selectedOrderIds.length === 0) {
+      showAlert("alerta", "Nenhum pedido selecionado!");
       return;
     }
-    setIsSelectionMode(false);
-    setShowDownloadOptions(false);
-  
-    // Cria o documento no formato A4 (pt = pontos)
-    const doc = new jsPDF("p", "pt", "a4");
+    setIsBulkFinalizeModalOpen(true);
+  };
+
+  // Atualiza os pedidos após finalização em lote
+  const handleBulkFinalize = (updates: { id: string; dataEntregue: string | null }[]) => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => {
+        const update = updates.find((upd) => upd.id === order.id);
+        return update ? { ...order, situacao: "Finalizado", dataEntregue: update.dataEntregue } : order;
+      })
+    );
+  };
+
+  // Função para gerar o PDF com os pedidos selecionados
+  const downloadPDF = async () => {
+    if (selectedOrderIds.length === 0) {
+      showAlert("alerta", "Nenhum pedido selecionado!");
+      return;
+    }
+
+    const doc = new jsPDF("l", "pt", "a4"); // Alterado para modo paisagem
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-  
-    // Função para converter a imagem para Base64 com opacidade ajustada
+
+    // Função para converter imagem para Base64 com opacidade
     const getTransparentImage = async (imgPath: string, opacity: number): Promise<string> => {
       return new Promise((resolve) => {
         const img = new Image();
@@ -175,43 +217,36 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
         };
       });
     };
-  
-    // Adiciona uma marca d'água
+
     const watermarkBase64 = await getTransparentImage(watermarkImage, 0.1);
     doc.addImage(watermarkBase64, "PNG", 50, 50, pageWidth - 100, pageHeight - 100);
-  
-    // Cabeçalho: título e informações (pode adicionar logo se desejar)
+
+    // Cabeçalho do PDF
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(40, 40, 40);
     doc.text("Lista de Pedidos", pageWidth / 2, 40, { align: "center" });
     doc.setFontSize(12);
     doc.text(`Serviço: ${selectedService} | Local: ${selectedLocal}`, pageWidth / 2, 60, { align: "center" });
-  
-    // Define os pedidos que serão incluídos no PDF
-    const ordersToInclude =
-      option === "all"
-        ? filteredOrders
-        : filteredOrders.filter((order) => selectedOrderIds.includes(order.id));
-  
-    // Prepara os dados da tabela
-    const tableColumn = ["Nome", "Localidade", "Solicitado", "Entregue", "Situação"];
-    const tableRows: string[][] = [];
-    ordersToInclude.forEach((order) => {
+
+    // Filtra os pedidos selecionados
+    const ordersToInclude = filteredOrders.filter((order) => selectedOrderIds.includes(order.id));
+
+    // Prepara os dados para a tabela
+    const tableColumn = ["Nome", "Localidade", "Solicitado", "Entregue", "Assinatura"];
+    const tableRows: string[][] = ordersToInclude.map((order) => {
       const user = users.find((u) => u.id === order.userId);
-      const orderData = [
+      return [
         user?.name || "N/A",
         user?.referencia || "N/A",
         formatDate(order.data),
-        formatDate(order.dataEntregue) || "",
-        order.situacao,
+        order.dataEntregue ? formatDate(order.dataEntregue) : "",
+        "",
       ];
-      tableRows.push(orderData);
     });
-  
-    // Configuração do autoTable para personalizar o design da tabela
+
     doc.autoTable({
-      startY: 80, // Inicia a tabela após o cabeçalho
+      startY: 80,
       head: [tableColumn],
       body: tableRows,
       theme: "grid",
@@ -232,21 +267,14 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
       },
       margin: { top: 80, bottom: 40 },
       didDrawPage: (data) => {
-        // Rodapé com numeração de páginas
         const pageStr = "Página " + doc.getNumberOfPages();
         doc.setFontSize(10);
         doc.text(pageStr, data.settings.margin.left, pageHeight - 10);
       },
     });
-  
-    // Salva o PDF com o nome definido
-    doc.save("lista-pedidos.pdf");
-  };
-  
 
-  const handleConfirmSelection = () => {
-    setIsPopupOpen(false);
-    setIsConfirmationPopupOpen(true);
+    doc.save("lista-pedidos.pdf");
+
   };
 
   return (
@@ -254,7 +282,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
       {/* Modal de seleção de Mês e Ano */}
       {isPopupOpen && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white w-[270px] mb-60 p-6 rounded-lg shadow-lg">
+          <div className="bg-white w-[270px] p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-bold mb-4 text-center">Selecione Mês e Ano</h2>
             <div className="flex gap-4 mb-4 justify-center">
               <select
@@ -285,7 +313,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
             </div>
             <button
               className="bg-gradient-to-r from-[#0E9647] to-[#165C38] w-full font-bold text-white px-4 py-2 rounded hover:opacity-80"
-              onClick={handleConfirmSelection}
+              onClick={() => setIsPopupOpen(false)}
             >
               Confirmar
             </button>
@@ -294,7 +322,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
       )}
 
       {/* Seção de filtros e botões */}
-      <div className="flex gap-10 justify-center mb-4">
+      <div className="flex flex-wrap gap-10 justify-center mb-4">
         <div className="flex flex-col items-center">
           <h1 className="text-black font-bold text-2xl mb-2">Serviço</h1>
           <select
@@ -306,58 +334,41 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
               Selecione o Serviço
             </option>
             {apiServicos.map((servico) => (
-              <option className="bg-[#191B23] text-white" key={servico} value={servico}>
+              <option key={servico} value={servico} className="bg-[#191B23] text-white">
                 {servico}
               </option>
             ))}
           </select>
         </div>
 
-        <div className="flex gap-4 items-center">
-          <div className="flex flex-col">
-            <h1 className="text-black font-bold text-2xl mb-2 text-center">Localidade</h1>
-            <select
-              value={selectedLocal}
-              onChange={(e) => setSelectedLocal(e.target.value)}
-              className="border w-[250px] text-white font-semibold rounded-lg px-2 py-1 text-center bg-gradient-to-b from-[#00324C] to-[#191B23] appearance-none cursor-pointer"
-            >
-              <option value="" className="bg-[#191B23] text-white">
-                Selecione a Localidade
+        <div className="flex flex-col items-center">
+          <h1 className="text-black font-bold text-2xl mb-2">Localidade</h1>
+          <select
+            value={selectedLocal}
+            onChange={(e) => setSelectedLocal(e.target.value)}
+            className="border w-[250px] text-white font-semibold rounded-lg px-2 py-1 text-center bg-gradient-to-b from-[#00324C] to-[#191B23] appearance-none cursor-pointer"
+          >
+            <option value="" className="bg-[#191B23] text-white">
+              Selecione a Localidade
+            </option>
+            {localOptions.map((local) => (
+              <option key={local} value={local} className="bg-[#191B23] text-white">
+                {local}
               </option>
-              {localOptions.map((local) => (
-                <option className="bg-[#191B23] text-white" key={local} value={local}>
-                  {local}
-                </option>
-              ))}
-            </select>
-          </div>
+            ))}
+          </select>
         </div>
 
-        <div className="flex flex-col">
-          <div className="flex">
-            <label htmlFor="periodo" className="font-bold text-2xl mb-2">
-              Período:
-            </label>
-            <svg
-              className="w-7 h-7 ml-4 cursor-pointer"
-              viewBox="0 0 34 34"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+        <div className="flex flex-col items-center">
+          <label className="font-bold text-2xl mb-2">Período:</label>
+          <div className="flex items-center gap-4">
+            <div className="flex justify-center items-center w-[250px] h-[30px] rounded-lg bg-gradient-to-b from-[#00324C] to-[#191B23] text-white"
               onClick={() => setIsPopupOpen(true)}
             >
-              <path
-                d="M22.6667 2.83334V8.50001M11.3333 2.83334V8.50001M4.25 14.1667H29.75M7.08333 5.66668H26.9167C28.4815 5.66668 29.75 6.9352 29.75 8.50001V28.3333C29.75 29.8982 28.4815 31.1667 26.9167 31.1667H7.08333C5.51853 31.1667 4.25 29.8982 4.25 28.3333V8.50001C4.25 6.9352 5.51853 5.66668 7.08333 5.66668H7.08333Z"
-                stroke="#000"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className="flex justify-center w-[250px] h-[30px] rounded-lg items-center border-lg bg-gradient-to-b from-[#00324C] to-[#191B23] text-white">
-            <p className="text-lg font-semibold cursor-pointer">
-              {getMonthName(selectedMonth)}, {selectedYear}
-            </p>
+              <p className="text-lg font-semibold cursor-pointer">
+                {getMonthName(selectedMonth)}, {selectedYear}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -382,62 +393,37 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
 
         <div className="flex flex-col items-center">
           <h1 className="text-black font-bold text-2xl mb-2">Pedidos</h1>
-          <button
-            className="border w-[250px] text-white font-semibold rounded-lg px-2 py-1 text-center bg-gradient-to-b from-[#0E9647] to-[#165C38] hover:opacity-80"
-            onClick={() => setShowDownloadOptions(true)}
-          >
-            Baixar PDF
-          </button>
+          <div className="flex w-[300px] justify-center items-center gap-3">
+            <button
+              className="flex justify-center items-center w-1/2 h-[33px] rounded-lg bg-gradient-to-b from-[#0E9647] to-[#165C38] hover:opacity-80 text-white text-base font-semibold"
+              onClick={openBulkFinalizeModal}
+            >
+              Finalizar
+            </button>
+
+            <button
+
+              className="flex justify-center items-center w-1/2 h-[33px] rounded-lg bg-gradient-to-b from-[#0E9647] to-[#165C38] hover:opacity-80 text-white text-base font-semibold"
+              onClick={downloadPDF}
+            >
+              Baixar
+            </button>
+          </div>
+
+
         </div>
+
       </div>
 
-      {/* Modal de opções de download */}
-      {showDownloadOptions && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
-            <h2 className="text-xl font-bold mb-4">Opções de Download</h2>
-            <p className="mb-4">Escolha a opção desejada:</p>
-            <div className="flex justify-around">
-              <button
-                className="bg-gradient-to-b from-[#00324C] to-[#191B23] hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded"
-                onClick={() => downloadPDF("all")}
-              >
-                Toda Lista
-              </button>
-              <button
-                className="bg-gradient-to-b from-[#00324C] to-[#191B23] hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded"
-                onClick={() => {
-                  // Ativa o modo de seleção para exibir os checkboxes
-                  setIsSelectionMode(true);
-                  setShowDownloadOptions(false);
-                }}
-              >
-                Selecionados
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Se estiver em modo de seleção, exibe botões para confirmar ou cancelar */}
-      {isSelectionMode && (
-        <div className="flex gap-4 justify-center mb-4">
-          <button
-            className="bg-gradient-to-r from-[#0E9647] to-[#165C38] hover:bg-green-600 text-white font-semibold px-4 py-2 rounded"
-            onClick={() => downloadPDF("selected")}
-          >
-            Gerar PDF dos Selecionados
-          </button>
-          <button
-            className="bg-gradient-to-r from-[#E03335] to-[#812F2C] hover:bg-red-600 text-white font-semibold px-4 py-2 rounded"
-            onClick={() => {
-              setIsSelectionMode(false);
-              setSelectedOrderIds([]);
-            }}
-          >
-            Cancelar Seleção
-          </button>
-        </div>
+      {/* Modal para finalização em lote */}
+      {isBulkFinalizeModalOpen && (
+        <BulkFinalizeModal
+          selectedOrders={orders.filter((order) => selectedOrderIds.includes(order.id))}
+          onClose={() => setIsBulkFinalizeModalOpen(false)}
+          onBulkFinalize={handleBulkFinalize}
+          usuario={usuario}
+        />
       )}
 
       <div className="border border-black w-full mb-4"></div>
@@ -449,10 +435,10 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
           onUpdate={async (id, situacao) => {
             try {
               const dataEntregue = situacao === "Finalizado" ? new Date().toISOString() : null;
-              const response = await api.put(`/orders/${id}`, { 
+              const response = await api.put(`/orders/${id}`, {
                 usuario,
-                situacao, 
-                dataEntregue 
+                situacao,
+                dataEntregue,
               });
               if (response.status === 200) {
                 setOrders((prevOrders) =>
@@ -470,9 +456,12 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
           }}
           selectedOrderIds={selectedOrderIds}
           toggleOrderSelection={toggleOrderSelection}
-          isSelectionMode={isSelectionMode}
+          isSelectionMode={selectedOrderIds.length > 0}
         />
       </div>
+      {alertVisible && <Alert type={alertType} text={alertText} onClose={closeAlert} />}
     </section>
   );
 };
+
+export default PedidosComponent;

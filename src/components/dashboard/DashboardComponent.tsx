@@ -24,7 +24,7 @@ interface Estatisticas {
 
 const LoadingSpinner: React.FC = () => {
     return (
-        <div className="flex justify-center items-center h-full">
+        <div className="">
             <div className="w-28 h-28 border-4 border-[#191B23] border-t-transparent border-solid rounded-full animate-spin"></div>
         </div>
     );
@@ -45,14 +45,15 @@ export const DashboardComponent: React.FC = () => {
 
     if (!estatisticas) {
         return (
-            <div className="h-full flex w-full items-center mt-5 justify-center align-middle">
+            <div className="flex h-full w-full items-center justify-center">
                 <LoadingSpinner />
             </div>
         );
     }
+    
 
     return (
-        <div className="w-full h-full flex flex-col lg:flex-row gap-6 p-2">
+        <div className="w-full h-full flex flex-col lg:flex-row gap-6 p-7">
             {/* Dados das Pessoas e Benefícios */}
             <div className="lg:w-3/5 w-full flex flex-col flex-wrap">
                 <h1 className="font-bold text-xl lg:text-2xl mb-7">Dados das Pessoas e Benefícios</h1>

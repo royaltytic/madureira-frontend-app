@@ -34,6 +34,8 @@ export const PersonScheme = z
     rgp: z.string().optional(),
     gta: z.string().optional(),
 
+    associacao: z.string().optional(),
+
     phone: z
       .string()
       .min(1, { message: "* Telefone é obrigatório." })

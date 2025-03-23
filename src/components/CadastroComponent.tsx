@@ -187,8 +187,6 @@ export const CadastroComponent = () => {
                   name="rg"
                   onFileUpload={handleFileUploadForField("rg")}
                 />
-              </div>
-              <div className="flex flex-col lg:flex-row gap-10">
                 <Input
                   type={InputType.Phone}
                   label="Telefone"
@@ -197,6 +195,16 @@ export const CadastroComponent = () => {
                   name="phone"
                   placeholder="(00) 00000-0000"
                 />
+              </div>
+              <div className="flex flex-col lg:flex-row gap-10">
+                  <Input
+                    type={InputType.Text}
+                    label="Associação"
+                    error={errors}
+                    register={register}
+                    name="associacao"
+                    placeholder="Associação"
+                  />
                 <Input
                   type={InputType.Local}
                   label="Localidade"
@@ -212,6 +220,11 @@ export const CadastroComponent = () => {
                   register={register}
                   name="referencia"
                 />
+              </div>
+              <div>
+                <div>
+                  
+                </div>
               </div>
               <h2 className="text-2xl font-bold mt-4">Selecione a Classe</h2>
               <div className="flex gap-4">

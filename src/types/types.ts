@@ -36,6 +36,8 @@ export interface OrdersProps {
 
     classe: string[];
 
+    associacao: string;
+
     orders: OrdersProps[];
 
     // Agricultores e/ou Pescadores

@@ -32,7 +32,7 @@ interface PessoaProps {
 interface ListaPedidosProps {
   pedidos: OrdersProps[];
   local: string;
-  onUpdate: (id: string, situacao: string) => Promise<void>;
+  onUpdate: (id: string, situacao: string, dataEntregue?: string) => Promise<void>;
   selectedOrderIds: string[];
   toggleOrderSelection: (orderId: string) => void;
   isSelectionMode: boolean;
@@ -44,21 +44,24 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
   onUpdate,
   selectedOrderIds,
   toggleOrderSelection,
-  isSelectionMode,
 }) => {
+  // Mapeamentos para armazenar dados de usuários e funcionários
   const [userMap, setUserMap] = useState<{ [key: string]: PessoaProps }>({});
   const [employeeMap, setEmployeeMap] = useState<{ [key: string]: EmployeeProps }>({});
   const [entreguePorMap, setEntreguePorMap] = useState<{ [key: string]: EmployeeProps }>({});
   const [tooltipPedidoId, setTooltipPedidoId] = useState<string | null>(null);
 
-  // Estados para modais
+  // Estados para modais (atualização e visualização de imagem)
   const [isUpdatePopupOpen, setIsUpdatePopupOpen] = useState<boolean>(false);
   const [selectedPedidoForUpdate, setSelectedPedidoForUpdate] = useState<OrdersProps | null>(null);
   const [selectedPedidoForImage, setSelectedPedidoForImage] = useState<OrdersProps | null>(null);
 
+  // Estado para upload e finalização
   const [orderImageFile, setOrderImageFile] = useState<File | null>(null);
   const [isFinalizing, setIsFinalizing] = useState<boolean>(false);
+  const [dataEntregue, setDataEntregue] = useState<string>(new Date().toISOString().split("T")[0]);
 
+  // Busca os dados de usuários e funcionários para cada pedido
   useEffect(() => {
     const fetchData = async () => {
       const userMapTemp: { [key: string]: PessoaProps } = {};
@@ -94,6 +97,7 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
     fetchData();
   }, [pedidos]);
 
+  // Agrupa os pedidos por localidade e ordena-os pela data
   const sortedAndGroupedPedidos = useMemo(() => {
     const grouped = pedidos.reduce<{ [key: string]: OrdersProps[] }>((acc, pedido) => {
       const neighborhood = userMap[pedido.userId]?.neighborhood || "Outros";
@@ -111,31 +115,32 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
     );
   }, [pedidos, userMap]);
 
+  // Formata a data para o padrão dd/mm/yyyy
   const formatDate = (dateString: string | null): string =>
     dateString
       ? new Date(dateString).toLocaleDateString("pt-BR", { timeZone: "UTC" })
       : "---";
 
-  const openUpdatePopup = (pedido: OrdersProps) => {
-    setSelectedPedidoForUpdate(pedido);
-    setIsUpdatePopupOpen(true);
-  };
-
+  // Abre o modal de visualização da imagem
   const openImagePopup = (pedido: OrdersProps) => {
     setSelectedPedidoForImage(pedido);
   };
 
+  // Finaliza o pedido após upload (se houver)
   const finalizeOrder = async () => {
     setIsFinalizing(true);
+
+    let imageUrl: string | null = null;
 
     if (orderImageFile) {
       const formData = new FormData();
       formData.append("file", orderImageFile);
 
       try {
-        await api.post(`/upload/order/${selectedPedidoForUpdate?.id}`, formData, {
+        const response = await api.post(`/upload/order`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        imageUrl = response.data.imageUrl;
       } catch (error) {
         console.error("Erro ao enviar imagem:", error);
         alert("Erro ao enviar a imagem. Tente novamente.");
@@ -144,14 +149,23 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
       }
     }
 
-    const newSituacao =
-      selectedPedidoForUpdate?.situacao === "Aguardando" ? "Finalizado" : "Aguardando";
+    try {
+      await api.put(`/orders/${selectedPedidoForUpdate?.id}`, {
+        situacao: "Finalizado",
+        dataEntregue,
+        imageUrl,
+      });
 
-    onUpdate(selectedPedidoForUpdate!.id, newSituacao);
+      onUpdate(selectedPedidoForUpdate!.id, "Finalizado", dataEntregue);
 
-    setIsUpdatePopupOpen(false);
-    setSelectedPedidoForUpdate(null);
-    setOrderImageFile(null);
+      setIsUpdatePopupOpen(false);
+      setSelectedPedidoForUpdate(null);
+      setOrderImageFile(null);
+    } catch (error) {
+      console.error("Erro ao atualizar pedido:", error);
+      alert("Erro ao atualizar pedido. Tente novamente.");
+    }
+
     setIsFinalizing(false);
   };
 
@@ -159,6 +173,21 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
     setIsUpdatePopupOpen(false);
     setSelectedPedidoForUpdate(null);
     setOrderImageFile(null);
+  };
+
+  // Função para "select all" nos pedidos visíveis
+  const toggleSelectAll = () => {
+    const visibleIds = sortedAndGroupedPedidos.map((pedido) => pedido.id);
+    const allSelected = visibleIds.every((id) => selectedOrderIds.includes(id));
+    if (allSelected) {
+      visibleIds.forEach((id) => {
+        if (selectedOrderIds.includes(id)) toggleOrderSelection(id);
+      });
+    } else {
+      visibleIds.forEach((id) => {
+        if (!selectedOrderIds.includes(id)) toggleOrderSelection(id);
+      });
+    }
   };
 
   const visibleCount = 12;
@@ -170,18 +199,22 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white p-6 rounded-lg shadow-md w-80 text-center">
             <UploadFileModal onFileSelected={setOrderImageFile} />
+            <div className="mt-4">
+              <label className="font-semibold">Data de Entrega:</label>
+              <input
+                type="date"
+                value={dataEntregue}
+                onChange={(e) => setDataEntregue(e.target.value)}
+                className="border rounded-md p-2 w-full mt-2"
+              />
+            </div>
             <div className="flex justify-center gap-4 mt-4">
-              <button
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded"
-                onClick={cancelUpdate}
-              >
+              <button className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded" onClick={cancelUpdate}>
                 Cancelar
               </button>
               <button
                 disabled={isFinalizing}
-                className={`bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded ${
-                  isFinalizing ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded ${isFinalizing ? "opacity-50 cursor-not-allowed" : ""}`}
                 onClick={finalizeOrder}
               >
                 Finalizar
@@ -193,14 +226,8 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
 
       {/* Modal para exibir o anexo (imagem do pedido) */}
       {selectedPedidoForImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
-          onClick={() => setSelectedPedidoForImage(null)}
-        >
-          <div
-            className="bg-white p-6 rounded shadow-md max-w-lg max-h-[80vh] overflow-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onClick={() => setSelectedPedidoForImage(null)}>
+          <div className="bg-white p-6 rounded shadow-md max-w-lg max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
             {selectedPedidoForImage.imageUrl ? (
               <>
                 <img
@@ -209,10 +236,7 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
                   className="max-w-full max-h-[60vh] object-contain mb-4"
                 />
                 <div className="flex gap-4">
-                  <button
-                    className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded w-1/2"
-                    onClick={() => setSelectedPedidoForImage(null)}
-                  >
+                  <button className="bg-gradient-to-r from-[#E03335] to-[#812F2C] hover:bg-red-600 text-white font-semibold px-4 py-2 rounded w-1/2" onClick={() => setSelectedPedidoForImage(null)}>
                     Fechar
                   </button>
                   <a
@@ -220,7 +244,7 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
                     download
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-green-500 hover:bg-green-600 text-center text-white font-semibold px-4 py-2 rounded w-1/2"
+                    className="bg-gradient-to-r from-[#0E9647] to-[#165C38] hover:bg-green-600 text-center text-white font-semibold px-4 py-2 rounded w-1/2"
                   >
                     Baixar
                   </a>
@@ -234,15 +258,20 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
       )}
 
       {pedidos.length === 0 ? (
-        <p className="text-center text-gray-600 text-xl my-4">
-          Nenhum pedido disponível no momento.
-        </p>
+        <p className="text-center text-gray-600 text-xl my-4">Nenhum pedido disponível no momento.</p>
       ) : (
-        <div className="w-full overflow-x-auto rounded-lg">
-          <table className="min-w-full border border-gray-200 rounded-lg">
-            <thead className="bg-gray-200">
+        <div className="w-full overflow-x-auto rounded-lg shadow  border border-gray-200">
+          <table className="min-w-full border border-gray-200 max-h-full overflow-y-auto ">
+            <thead className="sticky top-0 bg-gray-200 z-10">
               <tr>
-                {isSelectionMode && <th className="px-4 py-2 border">Selecionar</th>}
+                <th className="px-4 py-2 border text-center">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox h-5 w-5 text-blue-500 hover: cursor-pointer"
+                    checked={sortedAndGroupedPedidos.every((pedido) => selectedOrderIds.includes(pedido.id))}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
                 <th className="px-4 py-2 border">Nome</th>
                 <th className="px-4 py-2 border">Localidade</th>
                 <th className="px-4 py-2 border">Descrição</th>
@@ -256,16 +285,14 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
                 const user = userMap[pedido.userId];
                 return (
                   <tr key={pedido.id} className="hover:bg-gray-50">
-                    {isSelectionMode && (
-                      <td className="px-4 py-2 border text-center">
-                        <input
-                          type="checkbox"
-                          className="form-checkbox h-5 w-5 text-blue-500"
-                          checked={selectedOrderIds.includes(pedido.id)}
-                          onChange={() => toggleOrderSelection(pedido.id)}
-                        />
-                      </td>
-                    )}
+                    <td className="px-4 py-2 border text-center">
+                      <input
+                        type="checkbox"
+                        className="form-checkbox h-5 w-5 text-blue-500 hover: cursor-pointer"
+                        checked={selectedOrderIds.includes(pedido.id)}
+                        onChange={() => toggleOrderSelection(pedido.id)}
+                      />
+                    </td>
                     <td className="px-4 py-2 border text-lg cursor-pointer" onClick={() => openImagePopup(pedido)}>
                       {user ? `${user.name}, ${user.apelido}` : "Carregando..."}
                     </td>
@@ -275,7 +302,7 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
                         : user?.referencia || "Carregando..."}
                     </td>
                     <td className="px-4 py-2 border text-lg text-center">
-                      {pedido.descricao ? pedido.descricao : "---"}
+                      {pedido.descricao || "---"}
                     </td>
                     <td
                       className="px-4 py-2 border text-lg text-center relative"
@@ -313,9 +340,8 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
                     </td>
                     <td className="px-4 py-2 border text-center">
                       <button
-                        onClick={() => openUpdatePopup(pedido)}
                         disabled={pedido.situacao === "Finalizado"}
-                        className={`px-4 py-1 w-40 rounded text-white font-semibold transition-colors ${
+                        className={`px-4 py-1 w-40 rounded text-white cursor-default font-semibold transition-colors ${
                           pedido.situacao === "Aguardando"
                             ? "bg-gradient-to-r from-[#E03335] to-[#812F2C] hover:bg-red-600"
                             : "bg-gradient-to-r from-[#0E9647] to-[#165C38] hover:bg-green-600"

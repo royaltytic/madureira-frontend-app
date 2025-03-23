@@ -30,6 +30,7 @@ export const Home: React.FC<HomeProps> = ({
   referencia,
   adagro,
   classe,
+  associacao,
   chapeuPalha,
   garantiaSafra,
   paa,
@@ -63,6 +64,7 @@ export const Home: React.FC<HomeProps> = ({
     referencia,
     adagro,
     classe,
+    associacao,
     chapeuPalha,
     garantiaSafra,
     paa,
@@ -146,18 +148,26 @@ export const Home: React.FC<HomeProps> = ({
   };
 
 
-  const updatePedidoSituacao = async (id: string, situacao: string) => {
+  const updatePedidoSituacao = async (
+    id: string,
+    situacao: string,
+    dataEntregue?: string
+  ) => {
     try {
-      const dataEntregue = situacao === "Finalizado" ? new Date().toISOString() : null;
-
-      const response = await api.put(`/orders/${id}`, { usuario, situacao, dataEntregue });
-
+      // Se a situação for "Finalizado", utilize a data passada ou, se não houver, a data atual.
+      const finalData =
+        situacao === "Finalizado" ? dataEntregue || new Date().toISOString() : null;
+  
+      const response = await api.put(`/orders/${id}`, {
+        usuario,
+        situacao,
+        dataEntregue: finalData,
+      });
+  
       if (response.status === 200) {
         setOrder((prevOrder) =>
           prevOrder.map((order) =>
-            order.id === id
-              ? { ...order, usuario, situacao, dataEntregue }
-              : order
+            order.id === id ? { ...order, usuario, situacao, dataEntregue: finalData } : order
           )
         );
       } else {
@@ -168,6 +178,7 @@ export const Home: React.FC<HomeProps> = ({
       showAlert("error", "Erro ao atualizar a situação do pedido. Tente novamente.");
     }
   };
+  
 
   const atualizarDadosUsuario = (updatedData: Partial<PessoaProps>) => {
     setUserData((prevUserData) => ({
@@ -177,7 +188,7 @@ export const Home: React.FC<HomeProps> = ({
   };
 
   return (
-    <section className="flex flex-col bg-white w-full h-full">
+    <section className="flex flex-col bg-white w-full h-full p-5">
       <div className="">
         <div className="flex w-full">
           <div>
@@ -217,6 +228,7 @@ export const Home: React.FC<HomeProps> = ({
                     referencia={userData.referencia}
                     adagro={userData.adagro}
                     classe={userData.classe}
+                    associacao={userData.associacao}
                     chapeuPalha={userData.chapeuPalha}
                     garantiaSafra={userData.garantiaSafra}
                     paa={userData.paa}
@@ -240,6 +252,9 @@ export const Home: React.FC<HomeProps> = ({
                       Nome: <span className="ml-1">{userData.name}</span>
                     </p><p className="my-2 text-base">
                       Classe: <span className="ml-1">{userData.classe}</span>
+                    </p>
+                    <p className="my-2 text-base">
+                      Associação: <span className="ml-1">{userData.associacao}</span>
                     </p>
                     <p className="my-2 text-base">
                       Telefone: <span className="ml-1">{userData.phone}</span>
@@ -276,7 +291,12 @@ export const Home: React.FC<HomeProps> = ({
                     <span className="ml-1">{userData.neighborhood}</span>
                   </p><p className="my-2 text-base">
                     Referência: <span className="ml-1">{userData.referencia}</span>
-                  </p></>)
+                  </p>
+                  <p className="my-2 text-base">
+                      Associação: <span className="ml-1">{userData.associacao}</span>
+                  </p>
+                  </>)
+                  
               }
 
 

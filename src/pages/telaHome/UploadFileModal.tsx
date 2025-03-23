@@ -24,7 +24,6 @@ export const UploadFileModal: React.FC<UploadFileModalProps> = ({ onFileSelected
 
   return (
     <div className="bg-white w-full rounded-xl flex flex-col items-center justify-center transform transition-transform duration-300 scale-100 opacity-100">
-      <h1 className="font-bold text-2xl mb-4">Selecione um anexo</h1>
       <div
         {...getRootProps()}
         className="w-full max-w-[438px] h-[300px] outline-dashed outline-[#165C38] outline-3 flex flex-col items-center justify-center text-blue-500 rounded-md cursor-pointer hover:bg-green-50"
