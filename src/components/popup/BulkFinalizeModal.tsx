@@ -25,6 +25,7 @@ const BulkFinalizeModal: React.FC<BulkFinalizeModalProps> = ({
       const today = new Date().toISOString().split("T")[0];
       initialDates[order.id] = today;
     });
+    
     return initialDates;
   });
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -82,18 +83,23 @@ const BulkFinalizeModal: React.FC<BulkFinalizeModalProps> = ({
       const updates = await Promise.all(
         selectedOrders.map(async (order) => {
           const parsedDate = new Date(deliveryDates[order.id]);
-          parsedDate.setHours(12, 0, 0, 0);
-          const dataEntregueISO = parsedDate.toISOString();
-
+          parsedDate.setHours(3, 0, 0, 0);
+      
+          // Ajusta para o fuso horário local antes de converter para string ISO
+          const localDate = new Date(parsedDate.getTime() - parsedDate.getTimezoneOffset() * 60000);
+          const dataEntregueISO = localDate.toISOString();
+      
           await api.put(`/orders/${order.id}`, {
             usuario,
             situacao: "Finalizado",
             dataEntregue: dataEntregueISO,
             imageUrl: uploadedFileUrl,
           });
+      
           return { id: order.id, dataEntregue: dataEntregueISO };
         })
       );
+      
       onBulkFinalize(updates);
       onClose();
     } catch (error) {

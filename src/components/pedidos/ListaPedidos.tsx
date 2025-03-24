@@ -259,103 +259,110 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
 
       {pedidos.length === 0 ? (
         <p className="text-center text-gray-600 text-xl my-4">Nenhum pedido disponível no momento.</p>
-      ) : (
-        <div className="w-full overflow-x-auto rounded-lg shadow  border border-gray-200">
-          <table className="min-w-full border border-gray-200 max-h-full overflow-y-auto ">
-            <thead className="sticky top-0 bg-gray-200 z-10">
-              <tr>
-                <th className="px-4 py-2 border text-center">
+      ) : (<div className="w-full rounded-lg shadow border border-gray-200">
+      <table className="w-full table-auto">
+        <thead className="bg-gray-100 sticky top-0 z-10">
+          <tr>
+            <th className="px-4 py-2 text-center">
+              <input
+                type="checkbox"
+                className="form-checkbox h-5 w-5 text-blue-500 cursor-pointer"
+                checked={
+                  sortedAndGroupedPedidos.every((pedido) =>
+                    selectedOrderIds.includes(pedido.id)
+                  )
+                }
+                onChange={toggleSelectAll}
+              />
+            </th>
+            <th className="px-4 py-2">Nome</th>
+            <th className="px-4 py-2">Localidade</th>
+            <th className="px-4 py-2">Descrição</th>
+            <th className="px-4 py-2">Solicitado</th>
+            <th className="px-4 py-2">Entregue</th>
+            <th className="px-4 py-2">Situação</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {sortedAndGroupedPedidos.slice(0, visibleCount).map((pedido) => {
+            const user = userMap[pedido.userId];
+            return (
+              <tr key={pedido.id} className="hover:bg-gray-50">
+                <td className="px-4 py-2 text-center">
                   <input
                     type="checkbox"
-                    className="form-checkbox h-5 w-5 text-blue-500 hover: cursor-pointer"
-                    checked={sortedAndGroupedPedidos.every((pedido) => selectedOrderIds.includes(pedido.id))}
-                    onChange={toggleSelectAll}
+                    className="form-checkbox h-5 w-5 text-blue-500 cursor-pointer"
+                    checked={selectedOrderIds.includes(pedido.id)}
+                    onChange={() => toggleOrderSelection(pedido.id)}
                   />
-                </th>
-                <th className="px-4 py-2 border">Nome</th>
-                <th className="px-4 py-2 border">Localidade</th>
-                <th className="px-4 py-2 border">Descrição</th>
-                <th className="px-4 py-2 border">Solicitado</th>
-                <th className="px-4 py-2 border">Entregue</th>
-                <th className="px-4 py-2 border">Situação</th>
+                </td>
+                <td
+                  className="px-4 py-2 text-lg cursor-pointer"
+                  onClick={() => openImagePopup(pedido)}
+                >
+                  {user ? `${user.name}, ${user.apelido}` : "Carregando..."}
+                </td>
+                <td className="px-4 py-2 text-lg">
+                  {local === "Todos"
+                    ? `${user?.neighborhood}, ${user?.referencia}`
+                    : user?.referencia || "Carregando..."}
+                </td>
+                <td className="px-4 py-2 text-lg text-center">
+                  {pedido.descricao || "---"}
+                </td>
+                <td
+                  className="px-4 py-2 text-lg text-center relative"
+                  onMouseEnter={() => setTooltipPedidoId(`solicitado-${pedido.id}`)}
+                  onMouseLeave={() => setTooltipPedidoId(null)}
+                >
+                  {formatDate(pedido.data)}
+                  {tooltipPedidoId === `solicitado-${pedido.id}` && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-50">
+                      <p>
+                        Solicitado:{" "}
+                        {pedido.employeeId
+                          ? employeeMap[pedido.employeeId]?.user || "Não informado"
+                          : "Não informado"}
+                      </p>
+                    </div>
+                  )}
+                </td>
+                <td
+                  className="px-4 py-2 text-lg text-center relative"
+                  onMouseEnter={() => setTooltipPedidoId(`entregue-${pedido.id}`)}
+                  onMouseLeave={() => setTooltipPedidoId(null)}
+                >
+                  {formatDate(pedido.dataEntregue)}
+                  {tooltipPedidoId === `entregue-${pedido.id}` && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-50">
+                      <p>
+                        Entregue:{" "}
+                        {pedido.entreguePorId
+                          ? entreguePorMap[pedido.entreguePorId]?.user || "Não informado"
+                          : "Aguardando entrega"}
+                      </p>
+                    </div>
+                  )}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  <button
+                    disabled={pedido.situacao === "Finalizado"}
+                    className={`px-4 py-1 w-40 rounded text-white font-semibold transition-colors ${
+                      pedido.situacao === "Aguardando"
+                        ? "bg-gradient-to-r from-[#E03335] to-[#812F2C] hover:from-red-600 hover:to-red-700"
+                        : "bg-gradient-to-r from-[#0E9647] to-[#165C38] hover:from-green-600 hover:to-green-700"
+                    } ${pedido.situacao === "Finalizado" ? "cursor-default" : "cursor-default"}`}
+                  >
+                    {pedido.situacao}
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sortedAndGroupedPedidos.slice(0, visibleCount).map((pedido) => {
-                const user = userMap[pedido.userId];
-                return (
-                  <tr key={pedido.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 border text-center">
-                      <input
-                        type="checkbox"
-                        className="form-checkbox h-5 w-5 text-blue-500 hover: cursor-pointer"
-                        checked={selectedOrderIds.includes(pedido.id)}
-                        onChange={() => toggleOrderSelection(pedido.id)}
-                      />
-                    </td>
-                    <td className="px-4 py-2 border text-lg cursor-pointer" onClick={() => openImagePopup(pedido)}>
-                      {user ? `${user.name}, ${user.apelido}` : "Carregando..."}
-                    </td>
-                    <td className="px-4 py-2 border text-lg">
-                      {local === "Todos"
-                        ? `${user?.neighborhood}, ${user?.referencia}`
-                        : user?.referencia || "Carregando..."}
-                    </td>
-                    <td className="px-4 py-2 border text-lg text-center">
-                      {pedido.descricao || "---"}
-                    </td>
-                    <td
-                      className="px-4 py-2 border text-lg text-center relative"
-                      onMouseEnter={() => setTooltipPedidoId(`solicitado-${pedido.id}`)}
-                      onMouseLeave={() => setTooltipPedidoId(null)}
-                    >
-                      {formatDate(pedido.data)}
-                      {tooltipPedidoId === `solicitado-${pedido.id}` && (
-                        <div className="absolute top-full left-0 mt-1 p-1 bg-gray-800 text-white text-xs rounded shadow">
-                          <p>
-                            Solicitado:{" "}
-                            {pedido.employeeId
-                              ? employeeMap[pedido.employeeId]?.user || "Não informado"
-                              : "Não informado"}
-                          </p>
-                        </div>
-                      )}
-                    </td>
-                    <td
-                      className="px-4 py-2 border text-lg text-center relative"
-                      onMouseEnter={() => setTooltipPedidoId(`entregue-${pedido.id}`)}
-                      onMouseLeave={() => setTooltipPedidoId(null)}
-                    >
-                      {formatDate(pedido.dataEntregue)}
-                      {tooltipPedidoId === `entregue-${pedido.id}` && (
-                        <div className="absolute top-full left-0 mt-1 p-1 bg-gray-800 text-white text-xs rounded shadow">
-                          <p>
-                            Entregue:{" "}
-                            {pedido.entreguePorId
-                              ? entreguePorMap[pedido.entreguePorId]?.user || "Não informado"
-                              : "Aguardando entrega"}
-                          </p>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 border text-center">
-                      <button
-                        disabled={pedido.situacao === "Finalizado"}
-                        className={`px-4 py-1 w-40 rounded text-white cursor-default font-semibold transition-colors ${
-                          pedido.situacao === "Aguardando"
-                            ? "bg-gradient-to-r from-[#E03335] to-[#812F2C] hover:bg-red-600"
-                            : "bg-gradient-to-r from-[#0E9647] to-[#165C38] hover:bg-green-600"
-                        } ${pedido.situacao === "Finalizado" ? "cursor-not-allowed" : ""}`}
-                      >
-                        {pedido.situacao}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+    
       )}
     </div>
   );

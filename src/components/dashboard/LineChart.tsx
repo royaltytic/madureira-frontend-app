@@ -13,7 +13,6 @@ import api from "../../services/api";
 import { format, eachMonthOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 
-
 const Spinner: React.FC = () => {
   return (
     <div className="flex items-center justify-center h-full">
@@ -45,7 +44,6 @@ const GraficoTotais: React.FC = () => {
   const [servicoSelecionado, setServicoSelecionado] = useState("Todos");
   const [loading, setLoading] = useState(false);
 
-  // Inicializa as datas utilizando date-fns para garantir o formato "YYYY-MM-DD"
   const [periodoInicio, setPeriodoInicio] = useState(() => {
     const today = new Date();
     const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 2, 1);
@@ -56,19 +54,16 @@ const GraficoTotais: React.FC = () => {
     return format(today, "yyyy-MM-dd");
   });
 
-  // Função auxiliar para atualizar datas
-  const handleDateChange = (setter: React.Dispatch<React.SetStateAction<string>>) => 
+  const handleDateChange = (setter: React.Dispatch<React.SetStateAction<string>>) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.value) {
         setter(e.target.value);
       }
   };
 
-  // Função para buscar os dados (memorizada para evitar recriação)
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Cria um array com todos os meses do intervalo utilizando eachMonthOfInterval
       const startDate = new Date(periodoInicio);
       const endDate = new Date(periodoFim);
       const monthsInterval = eachMonthOfInterval({ start: startDate, end: endDate });
@@ -79,9 +74,7 @@ const GraficoTotais: React.FC = () => {
       }));
 
       const promises = months.map(async ({ year, month, name }) => {
-        // Define data de início e fim para o mês
         const dataInicio = format(new Date(year, month - 1, 1), "yyyy-MM-dd");
-        // O último dia do mês: criar uma data no próximo mês com dia 0
         const dataFim = format(new Date(year, month, 0), "yyyy-MM-dd");
 
         let totalMes = 0;
@@ -118,16 +111,16 @@ const GraficoTotais: React.FC = () => {
   }, [fetchData]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
-      <div className="flex flex-wrap justify-between gap-6 mb-2">
-        <div className="flex flex-col">
-          <label className="mb-1 text-base font-semibold text-gray-700">
+    <div className="w-full max-w-6xl mx-auto p-4 overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 mb-4">
+        <div className="flex-1 min-w-[200px]">
+          <label className="mb-1 block text-base font-semibold text-gray-700">
             Serviço
           </label>
           <select
             value={servicoSelecionado}
             onChange={(e) => setServicoSelecionado(e.target.value)}
-            className="w-64 p-1 border border-gray-300 font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full p-2 border border-gray-300 font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
             {SERVICOS.map((servico) => (
               <option key={servico} value={servico}>
@@ -136,30 +129,30 @@ const GraficoTotais: React.FC = () => {
             ))}
           </select>
         </div>
-        <div className="flex flex-col">
-          <label className="mb-1 text-base font-semibold text-gray-700">
+        <div className="flex-1 min-w-[200px]">
+          <label className="mb-1 block text-base font-semibold text-gray-700">
             Período Início
           </label>
           <input
             type="date"
             value={periodoInicio}
             onChange={handleDateChange(setPeriodoInicio)}
-            className="w-64 p-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
-        <div className="flex flex-col">
-          <label className="mb-1 text-base font-semibold text-gray-700">
+        <div className="flex-1 min-w-[200px]">
+          <label className="mb-1 block text-base font-semibold text-gray-700">
             Período Fim
           </label>
           <input
             type="date"
             value={periodoFim}
             onChange={handleDateChange(setPeriodoFim)}
-            className="w-64 p-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
       </div>
-      <div className="w-full h-[500px] bg-white rounded-lg shadow p-4">
+      <div className="w-full bg-white rounded-lg shadow p-4 h-[300px] md:h-[450px] overflow-hidden">
         {loading ? (
           <Spinner />
         ) : (
