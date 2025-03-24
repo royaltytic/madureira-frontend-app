@@ -152,7 +152,7 @@ const GraficoTotais: React.FC = () => {
           />
         </div>
       </div>
-      <div className="w-full bg-white rounded-lg shadow p-4 h-[300px] md:h-[450px] overflow-hidden">
+      <div className="w-full bg-white rounded-lg shadow p-4 h-[300px] md:h-[380px] overflow-hidden">
         {loading ? (
           <Spinner />
         ) : (
