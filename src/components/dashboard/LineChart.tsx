@@ -111,7 +111,7 @@ const GraficoTotais: React.FC = () => {
   }, [fetchData]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 overflow-hidden">
+    <div className="w-full max-w-6xl mx-auto p-2 overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 mb-4">
         <div className="flex-1 min-w-[200px]">
           <label className="mb-1 block text-base font-semibold text-gray-700">
@@ -152,7 +152,7 @@ const GraficoTotais: React.FC = () => {
           />
         </div>
       </div>
-      <div className="w-full bg-white rounded-lg shadow p-4 h-[300px] md:h-[380px] overflow-hidden">
+      <div className="w-full bg-white rounded-lg shadow p-2 h-[300px] md:h-[380px] overflow-hidden">
         {loading ? (
           <Spinner />
         ) : (

@@ -22,8 +22,12 @@ export const TelaPrincipal = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Inicializa o estado com os dados do usuário recebidos na rota
-  const [userData, setUserData] = useState(location.state?.userData);
+  const [userData, setUserData] = useState(() => {
+    const stateData = location.state?.userData;
+    if (stateData) return stateData;
+    const storedData = localStorage.getItem("userData");
+    return storedData ? JSON.parse(storedData) : null;
+  });
 
   const menuItems = [
     { label: "Dashboard", icon: Dashboard, component: <DashboardComponent /> },

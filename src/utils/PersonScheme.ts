@@ -28,6 +28,12 @@ export const PersonScheme = z
     apelido: z.string().transform((val) => val.trim()),
     cpf: z.string().transform((val) => val.replace(/\D/g, "")),
 
+    // genero: z
+    //   .string()
+    //   .min(1, { message: "* Gênero é obrigatório." })
+    //   .regex(/^(Masculino|Feminino)$/, { message: "O gênero deve ser 'Masculino' ou 'Feminino'." }),
+
+
     rg: z.string().optional(),
     caf: z.string().optional(),
     car: z.string().optional(),
@@ -41,16 +47,17 @@ export const PersonScheme = z
       .min(1, { message: "* Telefone é obrigatório." })
       .regex(/^\(\d{2}\) \d{5}-\d{4}$/, { message: "O telefone deve estar no formato (XX) XXXXX-XXXX." }),
 
-      neighborhood: z
+    neighborhood: z
       .string()
       .regex(/^[A-Za-zÀ-ÿ\s/]+$/, { message: "A localidade deve conter apenas letras e '/'" }),
-    
+
     referencia: z
       .string()
       .min(1, { message: "* Referência é obrigatória." })
       .min(3, { message: "A referência deve ter pelo menos 3 caracteres." })
       .max(50, { message: "A referência não pode ter mais de 50 caracteres." })
-      .regex(/^[A-Za-zÀ-ÿ\s]+$/, { message: "A referência deve conter apenas letras." }),
+      .regex(/^[A-Za-zÀ-ÿ0-9\s]+$/, { message: "A referência deve conter apenas letras e números." }),
+
 
     // Campos opcionais para Agricultor e Feirante
     adagro: z.string().optional(),
@@ -74,14 +81,14 @@ export const PersonScheme = z
 
     // O campo "produtos" é transformado de string para array, se for informado.
     produtos: z
-    .string()
-    .min(1, "Digite pelo menos um produto.") // Garante que tenha pelo menos um produto
-    .transform((val) =>
-      val
-        .split(",") // Divide os produtos pela vírgula
-        .map((produto) => produto.trim()) // Remove espaços extras
-        .filter((produto) => produto.length > 0) // Evita valores vazios
-    ).optional(),
+      .string()
+      .min(1, "Digite pelo menos um produto.") // Garante que tenha pelo menos um produto
+      .transform((val) =>
+        val
+          .split(",") // Divide os produtos pela vírgula
+          .map((produto) => produto.trim()) // Remove espaços extras
+          .filter((produto) => produto.length > 0) // Evita valores vazios
+      ).optional(),
 
     classe: z.array(
       z.enum(["Agricultor", "Pescador", "Feirante", "Outros", "Repartição Pública"])

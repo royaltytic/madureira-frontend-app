@@ -149,6 +149,8 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
       }
     }
 
+    console.log()
+
     try {
       await api.put(`/orders/${selectedPedidoForUpdate?.id}`, {
         situacao: "Finalizado",
@@ -190,7 +192,7 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
     }
   };
 
-  const visibleCount = 12;
+  const visibleCount = 120;
 
   return (
     <div className="flex flex-col items-center py-4 px-2">

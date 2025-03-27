@@ -25,7 +25,7 @@ const BulkFinalizeModal: React.FC<BulkFinalizeModalProps> = ({
       const today = new Date().toISOString().split("T")[0];
       initialDates[order.id] = today;
     });
-    
+
     return initialDates;
   });
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -59,7 +59,7 @@ const BulkFinalizeModal: React.FC<BulkFinalizeModalProps> = ({
   const handleFinalize = async () => {
     setIsFinalizing(true);
     let uploadedFileUrl: string | null = null;
-
+  
     if (orderImageFile) {
       const formData = new FormData();
       formData.append("file", orderImageFile);
@@ -78,28 +78,27 @@ const BulkFinalizeModal: React.FC<BulkFinalizeModalProps> = ({
         return;
       }
     }
-
+  
     try {
       const updates = await Promise.all(
         selectedOrders.map(async (order) => {
-          const parsedDate = new Date(deliveryDates[order.id]);
-          parsedDate.setHours(3, 0, 0, 0);
-      
-          // Ajusta para o fuso horário local antes de converter para string ISO
-          const localDate = new Date(parsedDate.getTime() - parsedDate.getTimezoneOffset() * 60000);
-          const dataEntregueISO = localDate.toISOString();
-      
+          // Criando a data sem deslocamento de fuso horário
+          const [year, month, day] = deliveryDates[order.id].split("-").map(Number);
+          const localDate = new Date(year, month - 1, day); // Usa apenas a data local
+  
+          console.log("Data de entrega (Local):", localDate);
+  
           await api.put(`/orders/${order.id}`, {
             usuario,
             situacao: "Finalizado",
-            dataEntregue: dataEntregueISO,
+            dataEntregue: localDate, // Salva no formato local sem alterar o fuso horário
             imageUrl: uploadedFileUrl,
           });
-      
-          return { id: order.id, dataEntregue: dataEntregueISO };
+  
+          return { id: order.id, dataEntregue: localDate.toISOString() };
         })
       );
-      
+  
       onBulkFinalize(updates);
       onClose();
     } catch (error) {
@@ -109,6 +108,8 @@ const BulkFinalizeModal: React.FC<BulkFinalizeModalProps> = ({
       setIsFinalizing(false);
     }
   };
+  
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -120,20 +121,22 @@ const BulkFinalizeModal: React.FC<BulkFinalizeModalProps> = ({
             <div key={order.id} className="mb-3 border-b pb-2">
               <p className="font-semibold">Pedido: {index + 1}</p>
               <p className="font-medium text-sm">
-                 {userMap[order.userId]?.name || "Carregando..."},{userMap[order.userId]?.apelido || "Carregando..."}
+                {userMap[order.userId]?.name || "Carregando..."},{userMap[order.userId]?.apelido || "Carregando..."}
               </p>
               <div className="flex gap-4 items-center mt-1">
-                <label className="block text-sm font-medium mb-1">Data de Entrega:</label>
-                <input
-                  type="date"
-                  value={deliveryDates[order.id]}
-                  onChange={(e) => handleDateChange(order.id, e.target.value)}
-                  className="border rounded px-2"
-                />
-              </div>
+  <label className="block text-sm font-medium mb-1">Data de Entrega:</label>
+  <input
+    type="date"
+    value={deliveryDates[order.id]}
+    onChange={(e) => handleDateChange(order.id, e.target.value)}
+    className="border rounded px-2"
+  />
+</div>
+
+
             </div>
           ))}
-          
+
         </div>
         <UploadFileModal onFileSelected={setOrderImageFile} />
         <div className="flex gap-4 justify-center mt-4 w-full">

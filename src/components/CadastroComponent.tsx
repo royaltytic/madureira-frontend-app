@@ -168,6 +168,14 @@ export const CadastroComponent = () => {
                   register={register}
                   name="apelido"
                 />
+                {/* <Input
+                  type={InputType.Radio}
+                  label="Genero"
+                  error={errors}
+                  register={register}
+                  name="genero"
+                  options={["Maculino", "Feminino"]}
+                /> */}
               </div>
               <div className="flex flex-col lg:flex-row gap-10">
                 <Input
@@ -197,14 +205,14 @@ export const CadastroComponent = () => {
                 />
               </div>
               <div className="flex flex-col lg:flex-row gap-10">
-                  <Input
-                    type={InputType.Text}
-                    label="Associação"
-                    error={errors}
-                    register={register}
-                    name="associacao"
-                    placeholder="Associação"
-                  />
+                <Input
+                  type={InputType.Text}
+                  label="Associação"
+                  error={errors}
+                  register={register}
+                  name="associacao"
+                  placeholder="Associação"
+                />
                 <Input
                   type={InputType.Local}
                   label="Localidade"
@@ -223,7 +231,7 @@ export const CadastroComponent = () => {
               </div>
               <div>
                 <div>
-                  
+
                 </div>
               </div>
               <h2 className="text-2xl font-bold mt-4">Selecione a Classe</h2>
@@ -518,8 +526,8 @@ export const CadastroComponent = () => {
                             placeholder="Ano"
                           />
                         </div>
-                      
-                        
+
+
                       )}
 
                     </div>

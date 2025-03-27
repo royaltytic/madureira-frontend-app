@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../../components/buttons/ButtonSimple";
 import { PopUp } from "../../components/popup/PopUp";
 import UltimosPedidos from "../../components/pedidos/UltimosPedidos";
@@ -88,6 +88,25 @@ export const Home: React.FC<HomeProps> = ({
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
 
+  // Função para buscar pedidos atualizados
+  const fetchOrders = async () => {
+    try {
+      const response = await api.get(`/users/${id}`); // ajuste a rota conforme sua API
+      setOrder(response.data.orders);
+    } catch (error) {
+      console.error("Erro ao buscar pedidos:", error);
+    }
+  };
+
+  useEffect(() => {
+    const intervalId = setInterval(fetchOrders, 5000); // A cada 5 segundos
+    return () => clearInterval(intervalId); // Limpa o intervalo ao desmontar
+  },);
+  
+
+
+  console.log(userData);
+
   // Estado para exibir alerta personalizado
   const [alert, setAlert] = useState<{
     type: "alerta" | "error" | "info" | "sucesso";
@@ -132,6 +151,9 @@ export const Home: React.FC<HomeProps> = ({
   };
 
   const salvarPedido = async (novosPedidos: OrdersProps[]) => {
+
+    console.log("pedidos salvos na tela home", novosPedidos);
+
     try {
       const response = await api.put("/users", {
         usuario,
@@ -149,10 +171,14 @@ export const Home: React.FC<HomeProps> = ({
 
 
   const updatePedidoSituacao = async (
+
     id: string,
     situacao: string,
     dataEntregue?: string
   ) => {
+
+    console.log("pedido atualizado", id, situacao, dataEntregue);
+    
     try {
       // Se a situação for "Finalizado", utilize a data passada ou, se não houver, a data atual.
       const finalData =
