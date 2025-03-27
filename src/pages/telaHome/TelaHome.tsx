@@ -104,9 +104,6 @@ export const Home: React.FC<HomeProps> = ({
   },);
   
 
-
-  console.log(userData);
-
   // Estado para exibir alerta personalizado
   const [alert, setAlert] = useState<{
     type: "alerta" | "error" | "info" | "sucesso";
@@ -152,8 +149,6 @@ export const Home: React.FC<HomeProps> = ({
 
   const salvarPedido = async (novosPedidos: OrdersProps[]) => {
 
-    console.log("pedidos salvos na tela home", novosPedidos);
-
     try {
       const response = await api.put("/users", {
         usuario,
@@ -177,8 +172,6 @@ export const Home: React.FC<HomeProps> = ({
     dataEntregue?: string
   ) => {
 
-    console.log("pedido atualizado", id, situacao, dataEntregue);
-    
     try {
       // Se a situação for "Finalizado", utilize a data passada ou, se não houver, a data atual.
       const finalData =

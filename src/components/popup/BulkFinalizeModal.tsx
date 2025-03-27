@@ -70,7 +70,6 @@ const BulkFinalizeModal: React.FC<BulkFinalizeModalProps> = ({
           { headers: { "Content-Type": "multipart/form-data" } }
         );
         uploadedFileUrl = response.data.imageUrl;
-        console.log("Imagem enviada com sucesso:", uploadedFileUrl);
       } catch (error) {
         console.error("Erro ao enviar imagem:", error);
         alert("Erro ao enviar a imagem. Tente novamente.");
@@ -85,9 +84,6 @@ const BulkFinalizeModal: React.FC<BulkFinalizeModalProps> = ({
           // Criando a data sem deslocamento de fuso horário
           const [year, month, day] = deliveryDates[order.id].split("-").map(Number);
           const localDate = new Date(year, month - 1, day); // Usa apenas a data local
-  
-          console.log("Data de entrega (Local):", localDate);
-  
           await api.put(`/orders/${order.id}`, {
             usuario,
             situacao: "Finalizado",
