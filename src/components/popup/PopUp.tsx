@@ -12,7 +12,10 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
     { servico: string; descricao: string }[]
   >([]);
   const [situacao] = useState("Aguardando");
-  const [dataPedido, setDataPedido] = useState(new Date().toISOString().split("T")[0]);
+  const [dataPedido, setDataPedido] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  
 
   const handlePedidoSelect = (servico: string, selected: boolean) => {
     setPedidosSelecionados((prev) => {
@@ -41,13 +44,15 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
       situacao: situacao,
       descricao: pedido.descricao,
       dataEntregue: null,
-      data: dataPedido,
+      data: dataPedido.split("-").reverse().join("/"), // Corrigido
       id: "",
       userId: "",
       employeeId: "",
       entreguePorId: "",
       imageUrl: "",
     }));
+    
+    
 
     onAddPedido(novosPedidos);
     onClose();
@@ -75,13 +80,14 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
         <div className="flex w-full items-center justify-center gap-5 p-5 rounded-t-lg">
           <h1 className="text-black font-bold text-2xl">Novo Pedido </h1>
           <input
-            type="date"
-            value={dataPedido}
-            onChange={(e) => setDataPedido(e.target.value)}
-            className="border rounded-md px-2 py-1"
-          />
+  type="date"
+  value={dataPedido}
+  onChange={(e) => setDataPedido(e.target.value)}
+  className="border rounded-md px-2 py-1"
+/>
+
         </div>
-        
+
 
         <div className="overflow-y-auto px-5">
           {pedidos.map((pedido, index) => {
@@ -105,7 +111,7 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
           })}
         </div>
 
-        
+
 
         <div className="flex items-center justify-center mt-4">
           <p
@@ -118,11 +124,10 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
           <button
             onClick={handleAddPedidos}
             disabled={pedidosSelecionados.length === 0}
-            className={`text-white font-bold rounded-lg w-40 h-9 my-2 ${
-              pedidosSelecionados.length === 0
+            className={`text-white font-bold rounded-lg w-40 h-9 my-2 ${pedidosSelecionados.length === 0
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-gradient-to-r from-[#0E9647] to-[#165C38]"
-            }`}
+              }`}
           >
             Pedir
           </button>

@@ -19,6 +19,7 @@ export const Home: React.FC<HomeProps> = ({
   id,
   name,
   apelido,
+  genero,
   cpf,
   rg,
   caf,
@@ -53,6 +54,7 @@ export const Home: React.FC<HomeProps> = ({
     id,
     name,
     apelido,
+    genero,
     cpf,
     rg,
     caf,
@@ -215,7 +217,7 @@ export const Home: React.FC<HomeProps> = ({
               <div className="flex">
                 <h2 className="text-2xl font-bold">Dados Pessoais</h2>
                 <svg
-                  className="w-7 h-7 ml-32 cursor-pointer"
+                  className="w-7 h-7 ml-24 cursor-pointer"
                   viewBox="0 0 48 48"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -236,6 +238,7 @@ export const Home: React.FC<HomeProps> = ({
                     id={userData.id}
                     name={userData.name}
                     apelido={userData.apelido}
+                    genero={userData.genero}
                     cpf={userData.cpf}
                     rg={userData.rg}
                     caf={userData.caf}
@@ -290,7 +293,10 @@ export const Home: React.FC<HomeProps> = ({
                   Nome: <span className="ml-1">{userData.name}</span>
                 </p><p className="my-2 text-base">
                     Apelido: <span className="ml-1">{userData.apelido}</span>
-                  </p><p className="my-2 text-base">
+                  </p>
+                  <p className="my-2 text-base">
+                  Gênero: <span className="ml-1">{userData.genero}</span></p>
+                  <p className="my-2 text-base">
                     Classe:{" "}
                     <span className="ml-1">
                       {Array.isArray(userData.classe) && userData.classe.length > 0
@@ -381,7 +387,7 @@ export const Home: React.FC<HomeProps> = ({
                   <div className="grid grid-cols-2 gap-2">
                     {userData.garantiaSafra && (
                       <p
-                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
                         title={`${userData.garantiaSafra}`}
                       >
                         Garantia Safra
@@ -390,7 +396,7 @@ export const Home: React.FC<HomeProps> = ({
 
                     {userData.chapeuPalha && (
                       <p
-                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
                         title={`${userData.chapeuPalha}`}
                       >
                         Chapéu de Palha
@@ -399,7 +405,7 @@ export const Home: React.FC<HomeProps> = ({
 
                     {userData.agua && (
                       <p
-                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
                         title="Possui acesso à água"
                       >
                         Água
@@ -408,7 +414,7 @@ export const Home: React.FC<HomeProps> = ({
 
                     {userData.adagro && (
                       <p
-                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
                         title="Possui CAD ADAGRO"
                       >
                         ADAGRO
@@ -417,7 +423,7 @@ export const Home: React.FC<HomeProps> = ({
 
                     {userData.paa && (
                       <p
-                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
                         title={`${userData.paa}`}
                       >
                         PAA
@@ -426,7 +432,7 @@ export const Home: React.FC<HomeProps> = ({
 
                     {userData.pnae && (
                       <p
-                        className="py-2 px-3 bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
+                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
                         title={`${userData.pnae}`}
                       >
                         PNAE
@@ -462,10 +468,17 @@ export const Home: React.FC<HomeProps> = ({
           <div className="flex flex-col">
 
           </div>
-          <div className="bg-white text-black w-full ml-8 rounded-2xl pb-4 shadow-2xl">
+          <div className="text-black w-full ml-8 ">
             {(userData.classe.includes("Agricultor") ||
               userData.classe.includes("Pescador") || userData.classe.includes("Outros") || userData.classe.includes("Repartição Pública")) ? (
-              <UltimosPedidos pedidos={order || []} onUpdate={updatePedidoSituacao} />
+              <UltimosPedidos 
+                pedidos={order || []} 
+                onUpdate={updatePedidoSituacao} 
+                onEdit={(pedido) => {
+                  console.log("Edit pedido:", pedido);
+                  // Implement the desired behavior for editing a pedido here
+                }} 
+              />
             ) : (
               <div className="w-full text-center text-red-500 font-bold mt-4">
                 Nenhum pedido disponível. Feirantes não têm acesso aos pedidos.

@@ -21,6 +21,8 @@ export interface OrdersProps {
     name: string;
   
     apelido: string;
+
+    genero: string;
   
     cpf: string;
   

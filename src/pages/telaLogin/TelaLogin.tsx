@@ -1,4 +1,4 @@
-import Logo from "./assets/logo.png";
+import Logo from "./assets/Logo.png";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import api from "../../services/api";
@@ -61,7 +61,7 @@ export const TelaLogin: React.FC<TelaLoginProps> = ({ onChangeMode }) => {
                     Usuário
                   </label>
                   <input
-                    className="w-full h-16 px-4 rounded-2xl bg-white text-2xl font-bold shadow-lg outline-none"
+                    className="w-full h-16 px-4 rounded-2xl bg-white text-2xl font-bold shadow-lg outline-none normal-case"
                     type="text"
                     value={user}
                     onChange={(e) => setUser(e.target.value)}
@@ -73,7 +73,7 @@ export const TelaLogin: React.FC<TelaLoginProps> = ({ onChangeMode }) => {
                     Senha
                   </label>
                   <input
-                    className="w-full h-16 px-4 rounded-2xl bg-white text-2xl font-bold shadow-lg outline-none"
+                    className="w-full h-16 px-4 rounded-2xl bg-white text-2xl font-bold shadow-lg outline-none normal-case"
                     type="password"
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
@@ -110,7 +110,7 @@ export const TelaLogin: React.FC<TelaLoginProps> = ({ onChangeMode }) => {
           </div>
           {/* Coluna da imagem/Logo */}
           <div className="hidden md:flex w-1/2 items-center justify-center">
-            <img src={Logo} alt="Logo" className="w-[500px] h-auto" />
+            <img src={Logo} alt="Logo" className="w-[700px] h-auto" />
           </div>
         </div>
       </div>

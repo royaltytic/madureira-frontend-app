@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -21,7 +23,6 @@ const Spinner: React.FC = () => {
   );
 };
 
-// Lista de serviços disponíveis
 const SERVICOS = [
   "Todos",
   "Água",
@@ -43,6 +44,7 @@ const GraficoTotais: React.FC = () => {
   const [data, setData] = useState<{ name: string; Total: number }[]>([]);
   const [servicoSelecionado, setServicoSelecionado] = useState("Todos");
   const [loading, setLoading] = useState(false);
+  const [tipoGrafico, setTipoGrafico] = useState<"linha" | "coluna">("linha");
 
   const [periodoInicio, setPeriodoInicio] = useState(() => {
     const today = new Date();
@@ -59,7 +61,7 @@ const GraficoTotais: React.FC = () => {
       if (e.target.value) {
         setter(e.target.value);
       }
-  };
+    };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -110,6 +112,42 @@ const GraficoTotais: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
+  const renderGrafico = () => {
+    if (tipoGrafico === "linha") {
+      return (
+        <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+          <XAxis dataKey="name" stroke="#555" />
+          <YAxis stroke="#555" />
+          <Tooltip />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="Total"
+            stroke="#191B23"
+            activeDot={{ r: 8 }}
+            name="Total de Pedidos"
+          />
+        </LineChart>
+      );
+    } else {
+      return (
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+          <XAxis dataKey="name" stroke="#555" />
+          <YAxis stroke="#555" />
+          <Tooltip />
+          <Legend />
+          <Bar
+            dataKey="Total"
+            fill="#191B23"
+            name="Total de Pedidos"
+          />
+        </BarChart>
+      );
+    }
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto p-2 overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 mb-4">
@@ -151,31 +189,22 @@ const GraficoTotais: React.FC = () => {
             className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
+        <div className="flex-1 min-w-[200px]">
+          <label className="mb-1 block text-base font-semibold text-gray-700">
+            Tipo de Gráfico
+          </label>
+          <select
+            value={tipoGrafico}
+            onChange={(e) => setTipoGrafico(e.target.value as "linha" | "coluna")}
+            className="w-full p-2 border border-gray-300 font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="linha">Linha</option>
+            <option value="coluna">Coluna</option>
+          </select>
+        </div>
       </div>
       <div className="w-full bg-white rounded-lg shadow p-2 h-[300px] md:h-[380px] overflow-hidden">
-        {loading ? (
-          <Spinner />
-        ) : (
-          <ResponsiveContainer>
-            <LineChart
-              data={data}
-              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-              <XAxis dataKey="name" stroke="#555" />
-              <YAxis stroke="#555" />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="Total"
-                stroke="#191B23"
-                activeDot={{ r: 8 }}
-                name="Total de Pedidos"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
+        {loading ? <Spinner /> : <ResponsiveContainer>{renderGrafico()}</ResponsiveContainer>}
       </div>
     </div>
   );

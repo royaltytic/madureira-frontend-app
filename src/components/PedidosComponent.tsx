@@ -3,7 +3,7 @@ import ListaPedidos from "./pedidos/ListaPedidos";
 import api from "../services/api";
 import jsPDF from "jspdf";
 import "jspdf-autotable"; // Plugin para criação de tabelas no jsPDF
-import watermarkImage from "../assets/logoIcon.png";
+import watermarkImage from "../assets/logoIcon.jpeg";
 import { PessoaProps, UserProps, OrdersProps } from "../types/types";
 import BulkFinalizeModal from "./popup/BulkFinalizeModal";
 import Alert from "./alerts/alertDesktop";
@@ -233,12 +233,13 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     const ordersToInclude = filteredOrders.filter((order) => selectedOrderIds.includes(order.id));
 
     // Prepara os dados para a tabela
-    const tableColumn = ["Nome", "Localidade", "Solicitado", "Entregue", "Assinatura"];
+    const tableColumn = ["Nome", "Localidade", "Contato", "Solicitado", "Entregue", "Assinatura"];
     const tableRows: string[][] = ordersToInclude.map((order) => {
       const user = users.find((u) => u.id === order.userId);
       return [
         user?.name || "N/A",
         user?.referencia || "N/A",
+        user?.phone || "N/A",
         formatDate(order.data),
         order.dataEntregue ? formatDate(order.dataEntregue) : "",
         "",

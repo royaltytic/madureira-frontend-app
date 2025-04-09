@@ -28,11 +28,7 @@ export const PersonScheme = z
     apelido: z.string().transform((val) => val.trim()),
     cpf: z.string().transform((val) => val.replace(/\D/g, "")),
 
-    // genero: z
-    //   .string()
-    //   .min(1, { message: "* Gênero é obrigatório." })
-    //   .regex(/^(Masculino|Feminino)$/, { message: "O gênero deve ser 'Masculino' ou 'Feminino'." }),
-
+    genero: z.enum(["Masculino", "Feminino", "Outro"]).refine((val) => !!val, { message: "O gênero é obrigatório" }),
 
     rg: z.string().optional(),
     caf: z.string().optional(),
@@ -45,7 +41,9 @@ export const PersonScheme = z
     phone: z
       .string()
       .min(1, { message: "* Telefone é obrigatório." })
-      .regex(/^\(\d{2}\) \d{5}-\d{4}$/, { message: "O telefone deve estar no formato (XX) XXXXX-XXXX." }),
+      .regex(/^\(\d{2}\) \d{5}-\d{4}$/, { message: "O telefone deve estar no formato (XX) XXXXX-XXXX." })
+      .optional(),
+      
 
     neighborhood: z
       .string()
@@ -55,8 +53,9 @@ export const PersonScheme = z
       .string()
       .min(1, { message: "* Referência é obrigatória." })
       .min(3, { message: "A referência deve ter pelo menos 3 caracteres." })
-      .max(50, { message: "A referência não pode ter mais de 50 caracteres." })
-      .regex(/^[A-Za-zÀ-ÿ0-9\s]+$/, { message: "A referência deve conter apenas letras e números." }),
+      .max(150, { message: "A referência não pode ter mais de 150 caracteres." })
+      .regex(/^[A-Za-zÀ-ÿ0-9\s]+$/, { message: "A referência deve conter apenas letras e números." })
+      .optional(),
 
 
     // Campos opcionais para Agricultor e Feirante

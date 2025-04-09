@@ -35,7 +35,7 @@ export const TelaPrincipal = () => {
     { label: "Usuários", icon: DB, component: <DataBaseComponent usuario={userData} /> },
     { label: "Cadastrar", icon: Cadastro, component: <CadastroComponent /> },
     {
-      label: "Configuração",
+      label: "Perfil",
       icon: Config,
       component: (
         <ConfiguracaoComponent

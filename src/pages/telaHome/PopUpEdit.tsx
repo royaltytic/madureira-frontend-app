@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 
+
 interface PessoaProps {
   id: string;
   name: string;
   apelido: string;
+  genero: string;
   cpf: string;
   rg: string;
   caf: string;
@@ -40,6 +42,7 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
   id,
   name,
   apelido,
+  genero,
   cpf,
   rg,
   caf,
@@ -67,9 +70,10 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     id,
+    cpf,
     name,
     apelido,
-    cpf,
+    genero,
     rg,
     caf,
     car,
@@ -266,8 +270,22 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
                     onChange={handleInputChange}
                     placeholder="CPF"
                     className="border rounded p-2 w-full"
-                    disabled
                   />
+                </div>
+                <div className="flex flex-col">
+                  <label htmlFor="genero" className="text-lg font-semibold mb-1">Gênero</label>
+                  <select
+                    id="genero"
+                    name="genero"
+                    value={formData.genero}
+                    onChange={handleInputChange}
+                    className="border rounded p-2 w-full bg-transparent"
+                  >
+                    <option value="">Selecione</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Feminino">Feminino</option>
+                    <option value="Feminino">Outro</option>
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

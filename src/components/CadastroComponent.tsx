@@ -151,7 +151,7 @@ export const CadastroComponent = () => {
           {step === 1 && (
             <div className="flex flex-col gap-6">
               <h2 className="text-2xl font-bold">Informações Gerais</h2>
-              <div className="flex flex-col lg:flex-row gap-10">
+              <div className="flex flex-col justify-between lg:flex-row gap-10">
                 <Input
                   type={InputType.Text}
                   placeholder="Nome"
@@ -168,14 +168,19 @@ export const CadastroComponent = () => {
                   register={register}
                   name="apelido"
                 />
-                {/* <Input
-                  type={InputType.Radio}
-                  label="Genero"
-                  error={errors}
-                  register={register}
-                  name="genero"
-                  options={["Maculino", "Feminino"]}
-                /> */}
+                <div className="flex flex-col w-2/3">
+                  <label htmlFor="genero" className="text-lg font-semibold mb-2 pl-1">Gênero</label>
+                  <select
+                    id="genero"
+                    {...register("genero")}
+                    className="border rounded-lg p-3 w-full bg-transparent"
+                  >
+                    <option value="">Selecione</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Feminino">Feminino</option>
+                  </select>
+                  {errors.genero && <p className="text-red-500 text-sm">{errors.genero.message}</p>}
+                </div>
               </div>
               <div className="flex flex-col lg:flex-row gap-10">
                 <Input
@@ -238,11 +243,11 @@ export const CadastroComponent = () => {
               <div className="flex gap-4">
                 <label className="flex items-center gap-2">
                   <input type="checkbox" value="Agricultor" {...register("classe")} />
-                  Agricultor
+                  Agricultor/a
                 </label>
                 <label className="flex items-center gap-2">
                   <input type="checkbox" value="Pescador" {...register("classe")} />
-                  Pescador
+                  Pescador/a
                 </label>
                 <label className="flex items-center gap-2">
                   <input type="checkbox" value="Feirante" {...register("classe")} />
