@@ -28,7 +28,7 @@ export const PersonScheme = z
     apelido: z.string().transform((val) => val.trim()),
     cpf: z.string().transform((val) => val.replace(/\D/g, "")),
 
-    genero: z.enum(["Masculino", "Feminino", "Outro"]).refine((val) => !!val, { message: "O gênero é obrigatório" }),
+    genero: z.enum(["Masculino", "Feminino", "Outro"]).optional(),
 
     rg: z.string().optional(),
     caf: z.string().optional(),
