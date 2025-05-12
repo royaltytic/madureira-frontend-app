@@ -3,6 +3,9 @@ import InputMask from "react-input-mask";
 import api from "../services/api";
 import { Home } from "../pages/telaHome/TelaHome";
 import { PessoaProps, UserProps } from "../types/types";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 
 interface DataBaseComponentProps {
   usuario: UserProps;
@@ -96,15 +99,80 @@ export const DatabaseComponent: React.FC<DataBaseComponentProps> = ({ usuario })
     );
   }
 
+  const exportToPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    // Título
+    doc.setFontSize(16);
+    doc.text("Lista de Usuários", 14, 10);
+
+    // Tabela
+    autoTable(doc, {
+      startY: 20,
+      head: [
+        [
+          "Nome",
+          "CPF",
+          "Apelido",
+          "RG",
+          "Telefone",
+          "Localidade",
+          "Classe",
+          "Pedidos",
+        ],
+      ],
+      body: filteredUsers.map((user) => [
+        user.name,
+        Array.isArray(user.classe) && user.classe.includes("Repartição Pública")
+          ? "-"
+          : formatCpf(user.cpf),
+        user.apelido || "-",
+        user.rg || "-",
+        user.phone || "-",
+        user.neighborhood || "-",
+        Array.isArray(user.classe) ? user.classe.join(", ") : "-",
+        user.orders.length.toString(),
+      ]),
+      styles: {
+        fontSize: 10, // Ajuste o tamanho aqui conforme necessário
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [52, 152, 219], // Azul claro
+        textColor: 255,
+        halign: "center",
+      },
+      bodyStyles: {
+        halign: "left",
+      },
+    });
+
+    doc.save("usuarios.pdf");
+
+  };
+
+
   return (
     <div className="p-5 w-full mx-auto">
       {error && <p className="text-red-600 text-center mb-5">{error}</p>}
 
-      <h1 className="text-4xl font-semibold text-center text-gray-800 mb-8">
+      <h1 className="text-4xl font-semibold text-center text-gray-800 ">
         Tabela de Usuários
       </h1>
 
-      <div className="border-t-2 border-gray-200 my-5"></div>
+      <div className="flex w-full gap-4 justify-end items-center">
+        <span className="">Total de pessoas: <b className="ml-2">{filteredUsers.length}</b></span>
+        <button
+          onClick={exportToPDF}
+          className="bg-gradient-to-r from-[#0E9647] to-[#165C38] text-white px-8 py-2 rounded-lg hover:opacity-90 transition"
+        >
+          Baixar PDF
+        </button>
+
+
+      </div>
+
+      <div className="border-t-2 border-gray-200 my-3"></div>
 
       {/* Campos de filtro */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-5">
@@ -132,7 +200,10 @@ export const DatabaseComponent: React.FC<DataBaseComponentProps> = ({ usuario })
             className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         ))}
+
       </div>
+
+
 
       {/* Tabela de usuários */}
       {loading ? (

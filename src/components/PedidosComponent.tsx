@@ -233,11 +233,12 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
     const ordersToInclude = filteredOrders.filter((order) => selectedOrderIds.includes(order.id));
 
     // Prepara os dados para a tabela
-    const tableColumn = ["Nome", "Localidade", "Contato", "Solicitado", "Entregue", "Assinatura"];
+    const tableColumn = ["Nome", "Apelido", "Localidade", "Contato", "Solicitado", "Entregue", "Assinatura"];
     const tableRows: string[][] = ordersToInclude.map((order) => {
       const user = users.find((u) => u.id === order.userId);
       return [
         user?.name || "N/A",
+        user?.apelido || "N/A",
         user?.referencia || "N/A",
         user?.phone || "N/A",
         formatDate(order.data),
