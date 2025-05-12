@@ -1,4 +1,4 @@
-import Logo from "./assets/Logo.png";
+import Logo from "./assets/logo.png";
 import { useState } from "react";
 import api from "../../services/api";
 import fundo from "./assets/fundo.jpeg";
