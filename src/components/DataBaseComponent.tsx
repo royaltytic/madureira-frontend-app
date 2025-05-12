@@ -131,7 +131,8 @@ export const DatabaseComponent: React.FC<DataBaseComponentProps> = ({ usuario })
         user.phone || "-",
         user.neighborhood || "-",
         Array.isArray(user.classe) ? user.classe.join(", ") : "-",
-        user.orders.length.toString(),
+        [...new Set(user.orders.map(order => order.servico))].join(", ")
+
       ]),
       styles: {
         fontSize: 10, // Ajuste o tamanho aqui conforme necessário
