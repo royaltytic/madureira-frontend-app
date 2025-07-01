@@ -11,6 +11,7 @@
     "db": "json-server -w db.json --port 3001"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.9.0",
     "@shadcn/ui": "^0.0.4",
     "@types/slick-carousel": "^1.6.40",
@@ -31,6 +32,7 @@
     "react-dom": "^18.3.1",
     "react-dropzone": "^14.2.10",
     "react-hook-form": "^7.53.0",
+    "react-hot-toast": "^2.5.2",
     "react-input-mask": "^2.0.4",
     "react-input-mask-next": "^3.0.0-alpha.12",
     "react-router-dom": "^6.26.2",

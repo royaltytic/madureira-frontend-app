@@ -24,10 +24,12 @@ const SERVICOS = [
   'CAF',
   'RGP',
   'GTA',
+  'Mudas',
   'Carta de Anuência Ambiental',
   'Serviço de Inspeção Municipal',
   'Declaração de Agricultor/a',
   'Declaração de Pescador/a',
+  'Caderneta de Pescador/a',
 ];
 
 class Grafico extends PureComponent<{ servico: string; dataInicio: string; dataFim: string }> {
@@ -59,8 +61,10 @@ class Grafico extends PureComponent<{ servico: string; dataInicio: string; dataF
         params: { servico, dataInicio, dataFim },
       });
 
-      const finalizado = response.data.filter((order: OrdersProps) => order.situacao === 'Finalizado').length;
-      const aguardando = response.data.filter((order: OrdersProps) => order.situacao === 'Aguardando').length;
+      const finalizado = response.data.filter((order: OrdersProps) => order.situacao === 'Finalizado' ).length;
+      const aguardando = response.data.filter((order: OrdersProps) => 
+        order.situacao === 'Aguardando' || order.situacao.startsWith('Lista')
+      ).length;;
       const total = finalizado + aguardando;
       const percentageF = total > 0 ? ((finalizado / total) * 100).toFixed(0) : 0;
 
@@ -143,6 +147,8 @@ export default function GraficoPorServicos() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [currentPage, setCurrentPage] = useState(0); // Changed from startIndex to currentPage for clarity
+  const CARDS_PER_PAGE = 12;
 
   const dataInicio = new Date(selectedYear, selectedMonth - 1, 1).toISOString().split('T')[0];
   const dataFim = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
@@ -153,6 +159,17 @@ export default function GraficoPorServicos() {
       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
     ];
     return months[month - 1];
+  };
+
+  // Calculate the total number of pages
+  const totalPages = Math.ceil(SERVICOS.length / CARDS_PER_PAGE);
+
+  // Calculate the services to display on the current page
+  const startIndex = currentPage * CARDS_PER_PAGE;
+  const visibleServices = SERVICOS.slice(startIndex, startIndex + CARDS_PER_PAGE);
+
+  const handlePageChange = (pageIndex: number) => {
+    setCurrentPage(pageIndex);
   };
 
   return (
@@ -181,8 +198,27 @@ export default function GraficoPorServicos() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {SERVICOS.map(servico => <Grafico key={servico} servico={servico} dataInicio={dataInicio} dataFim={dataFim} />)}
+      {/* Main content area including cards and pagination dots */}
+      <div className="flex flex-col items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {visibleServices.map(servico => (
+            <Grafico key={servico} servico={servico} dataInicio={dataInicio} dataFim={dataFim} />
+          ))}
+        </div>
+
+        {/* Pagination Dots */}
+        {totalPages > 1 && ( // Only show dots if there's more than one page
+          <div className="flex justify-center mt-4 space-x-2">
+            {Array.from({ length: totalPages }, (_, index) => (
+              <button
+                key={index}
+                onClick={() => handlePageChange(index)}
+                className={`w-3 h-3 rounded-full ${currentPage === index ? 'bg-gray-800' : 'bg-gray-400'}`}
+                aria-label={`Go to page ${index + 1}`}
+              ></button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

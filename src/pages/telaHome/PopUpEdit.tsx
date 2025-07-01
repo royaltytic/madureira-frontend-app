@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
+import { XMarkIcon } from '@heroicons/react/24/solid';
 
 
 interface PessoaProps {
@@ -35,6 +36,73 @@ interface PopUpProps {
   onClose: () => void;
   onUpdate: (updatedData: PessoaProps) => void;
 }
+
+// NOVO COMPONENTE REUTILIZÁVEL PARA BENEFÍCIOS
+interface BenefitInputProps {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const BenefitInput: React.FC<BenefitInputProps> = ({ label, name, value, onChange }) => {
+  // Verifica se o benefício está ativo (qualquer valor que não seja "Não")
+  const isActive = value !== 'Não';
+
+  const handleRadioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value === 'sim' ? '' : 'Não'; // Se for 'sim', prepara para digitar o ano. Se 'não', define como "Não".
+    // Simula um evento de input para ser compatível com a função handleInputChange principal
+    onChange({
+      target: { name, value: newValue },
+    } as React.ChangeEvent<HTMLInputElement>);
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-600">{label}</label>
+      <div className="mt-1 flex items-center gap-4">
+        {/* Opções Sim/Não */}
+        <div className="flex items-center gap-2">
+          <input
+            type="radio"
+            id={`${name}-sim`}
+            name={`${name}-radio`}
+            value="sim"
+            checked={isActive}
+            onChange={handleRadioChange}
+            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+          />
+          <label htmlFor={`${name}-sim`} className="text-sm text-slate-800">Sim</label>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="radio"
+            id={`${name}-nao`}
+            name={`${name}-radio`}
+            value="nao"
+            checked={!isActive}
+            onChange={handleRadioChange}
+            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+          />
+          <label htmlFor={`${name}-nao`} className="text-sm text-slate-800">Não</label>
+        </div>
+
+        {/* Campo de Ano (aparece apenas se "Sim" estiver marcado) */}
+        {isActive && (
+          <input
+            type="text"
+            name={name}
+            value={value} // O valor aqui será o ano
+            onChange={onChange}
+            placeholder="Ano(s). Ex: 2023, 2024"
+            className="flex-grow w-full border-slate-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 
 
@@ -97,6 +165,25 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
     produtos,
   });
 
+  const handleClassChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = e.target;
+    setFormData(prev => {
+      // Clona o array de classes atual
+      const newClasses = [...prev.classe];
+      if (checked) {
+        // Adiciona a nova classe se marcada
+        newClasses.push(value);
+      } else {
+        // Remove a classe se desmarcada
+        const index = newClasses.indexOf(value);
+        if (index > -1) {
+          newClasses.splice(index, 1);
+        }
+      }
+      return { ...prev, classe: newClasses };
+    });
+  };
+
   const [apiLocalOptions, setApiLocalOptions] = useState<string[]>([]);
 
   useEffect(() => {
@@ -138,431 +225,102 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl p-8 shadow-xl overflow-y-auto max-h-full">
-        <h2 className="text-2xl font-bold mb-6 text-center">Editar Dados Pessoais</h2>
-        <form className="flex flex-col gap-6">
-          {/* Se o usuário pertencer a "Repartição Pública", mostra campos específicos */}
-          {classe.includes("Repartição Pública") ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col">
-                <label htmlFor="name" className="text-lg font-semibold mb-1">Nome</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Nome"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="phone" className="text-lg font-semibold mb-1">Telefone</label>
-                <input
-                  type="text"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="Telefone"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="classe" className="text-lg font-semibold mb-1">Classe</label>
-                <input
-                  type="text"
-                  id="classe"
-                  name="classe"
-                  value={Array.isArray(formData.classe) ? formData.classe.join(", ") : ""}
-                  onChange={handleInputChange}
-                  placeholder="Classe"
-                  className="border rounded p-2 w-full"
-                />
-
-              </div>
-              <div className="flex flex-col">
-                  <label htmlFor="associacao" className="text-lg font-semibold mb-1">Associação</label>
-                  <input
-                    type="text"
-                    id="associacao"
-                    name="associacao"
-                    value={formData.associacao}
-                    onChange={handleInputChange}
-                    placeholder="Associação"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-              <div className="flex flex-col">
-                <label htmlFor="referencia" className="text-lg font-semibold mb-1">Referência</label>
-                <input
-                  type="text"
-                  id="referencia"
-                  name="referencia"
-                  value={formData.referencia}
-                  onChange={handleInputChange}
-                  placeholder="Referência"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="neighborhood" className="text-lg font-semibold mb-1">Localidade</label>
-                <select
-                  id="neighborhood"
-                  name="neighborhood"
-                  value={formData.neighborhood}
-                  onChange={handleInputChange}
-                  className="border rounded p-2 w-full bg-transparent"
-                >
-                  {apiLocalOptions.map((option, index) => (
-                    <option key={index} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="flex flex-col">
-                  <label htmlFor="name" className="text-lg font-semibold mb-1">Nome</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Nome"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="apelido" className="text-lg font-semibold mb-1">Apelido</label>
-                  <input
-                    type="text"
-                    id="apelido"
-                    name="apelido"
-                    value={formData.apelido}
-                    onChange={handleInputChange}
-                    placeholder="Apelido"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="phone" className="text-lg font-semibold mb-1">Telefone</label>
-                  <input
-                    type="text"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="Telefone"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="cpf" className="text-lg font-semibold mb-1">CPF</label>
-                  <input
-                    type="text"
-                    id="cpf"
-                    name="cpf"
-                    value={formData.cpf}
-                    onChange={handleInputChange}
-                    placeholder="CPF"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="genero" className="text-lg font-semibold mb-1">Gênero</label>
-                  <select
-                    id="genero"
-                    name="genero"
-                    value={formData.genero}
-                    onChange={handleInputChange}
-                    className="border rounded p-2 w-full bg-transparent"
-                  >
-                    <option value="">Selecione</option>
-                    <option value="Masculino">Masculino</option>
-                    <option value="Feminino">Feminino</option>
-                    <option value="Feminino">Outro</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="flex flex-col">
-                  <label htmlFor="rg" className="text-lg font-semibold mb-1">RG</label>
-                  <input
-                    type="text"
-                    id="rg"
-                    name="rg"
-                    value={formData.rg}
-                    onChange={handleInputChange}
-                    placeholder="RG"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="classe" className="text-lg font-semibold mb-1">Classe</label>
-                  <input
-                    type="text"
-                    id="classe"
-                    name="classe"
-                    value={formData.classe.join(", ")}
-                    onChange={handleInputChange}
-                    placeholder="Classe"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="associacao" className="text-lg font-semibold mb-1">Associação</label>
-                  <input
-                    type="text"
-                    id="associacao"
-                    name="associacao"
-                    value={formData.associacao}
-                    onChange={handleInputChange}
-                    placeholder="Associação"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="referencia" className="text-lg font-semibold mb-1">Referência</label>
-                  <input
-                    type="text"
-                    id="referencia"
-                    name="referencia"
-                    value={formData.referencia}
-                    onChange={handleInputChange}
-                    placeholder="Referência"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="neighborhood" className="text-lg font-semibold mb-1">Localidade</label>
-                  <select
-                    id="neighborhood"
-                    name="neighborhood"
-                    value={formData.neighborhood}
-                    onChange={handleInputChange}
-                    className="border rounded p-2 w-full bg-transparent"
-                  >
-                    {apiLocalOptions.map((option, index) => (
-                      <option key={index} value={option}>{option}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </>
-          )}
-
-          {(classe.includes("Agricultor") || classe.includes("Pescador")) && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="flex flex-col">
-                <label htmlFor="caf" className="text-lg font-semibold mb-1">CAF</label>
-                <input
-                  type="text"
-                  id="caf"
-                  name="caf"
-                  value={formData.caf}
-                  onChange={handleInputChange}
-                  placeholder="CAF"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="car" className="text-lg font-semibold mb-1">CAR</label>
-                <input
-                  type="text"
-                  id="car"
-                  name="car"
-                  value={formData.car}
-                  onChange={handleInputChange}
-                  placeholder="CAR"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="rgp" className="text-lg font-semibold mb-1">RGP</label>
-                <input
-                  type="text"
-                  id="rgp"
-                  name="rgp"
-                  value={formData.rgp}
-                  onChange={handleInputChange}
-                  placeholder="RGP"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="gta" className="text-lg font-semibold mb-1">GTA</label>
-                <input
-                  type="text"
-                  id="gta"
-                  name="gta"
-                  value={formData.gta}
-                  onChange={handleInputChange}
-                  placeholder="GTA"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="gta" className="text-lg font-semibold mb-1">CAD ADAGRO</label>
-                <input
-                  type="text"
-                  id="adagro"
-                  name="adagro"
-                  value={formData.adagro}
-                  onChange={handleInputChange}
-                  placeholder="Sim ou Não"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="gta" className="text-lg font-semibold mb-1">Garantia Safra</label>
-                <input
-                  type="text"
-                  id="garantiaSafra"
-                  name="garantiaSafra"
-                  value={formData.garantiaSafra}
-                  onChange={handleInputChange}
-                  placeholder="Garantia Safra"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="gta" className="text-lg font-semibold mb-1">Chapéu de Palha</label>
-                <input
-                  type="text"
-                  id="chapeuPalha"
-                  name="chapeuPalha"
-                  value={formData.chapeuPalha}
-                  onChange={handleInputChange}
-                  placeholder="Chapéu de Palha"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="gta" className="text-lg font-semibold mb-1">PAA</label>
-                <input
-                  type="text"
-                  id="paa"
-                  name="paa"
-                  value={formData.paa}
-                  onChange={handleInputChange}
-                  placeholder="PAA"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="gta" className="text-lg font-semibold mb-1">PNAE</label>
-                <input
-                  type="text"
-                  id="pnae"
-                  name="pnae"
-                  value={formData.pnae}
-                  onChange={handleInputChange}
-                  placeholder="PNAE"
-                  className="border rounded p-2 w-full"
-                />
-              </div>              <div className="flex flex-col">
-                <label htmlFor="gta" className="text-lg font-semibold mb-1">SSA Água</label>
-                <input
-                  type="text"
-                  id="agua"
-                  name="agua"
-                  value={formData.agua}
-                  onChange={handleInputChange}
-                  placeholder="Sim ou Não"
-                  className="border rounded p-2 w-full"
-                />
-              </div>
-            </div>
-          )}
-
-          {classe.includes("Feirante") && (
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="flex flex-col">
-                  <label htmlFor="imposto" className="text-lg font-semibold mb-1">Imposto</label>
-                  <input
-                    type="number"
-                    id="imposto"
-                    name="imposto"
-                    value={formData.imposto}
-                    onChange={handleInputChange}
-                    placeholder="Imposto"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="area" className="text-lg font-semibold mb-1">Área</label>
-                  <input
-                    type="text"
-                    id="area"
-                    name="area"
-                    value={formData.area}
-                    onChange={handleInputChange}
-                    placeholder="Área"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="tempo" className="text-lg font-semibold mb-1">Tempo</label>
-                  <input
-                    type="text"
-                    id="tempo"
-                    name="tempo"
-                    value={formData.tempo}
-                    onChange={handleInputChange}
-                    placeholder="Tempo"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="carroDeMao" className="text-lg font-semibold mb-1">Carro de Mão</label>
-                  <input
-                    type="text"
-                    id="carroDeMao"
-                    name="carroDeMao"
-                    value={formData.carroDeMao}
-                    onChange={handleInputChange}
-                    placeholder="Carro de Mão"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <label htmlFor="produtos" className="text-lg font-semibold mb-1">Produtos</label>
-                  <input
-                    type="text"
-                    id="produtos"
-                    name="produtos"
-                    value={formData.produtos}
-                    onChange={handleInputChange}
-                    placeholder="Produtos"
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </form>
-        <div className="flex justify-end mt-10 gap-4">
-          <p
-            onClick={onClose}
-            className="font-bold text-black text-center cursor-pointer px-4 py-2 rounded border border-gray-300 hover:bg-gray-200 transition-all w-[230px]"
-          >
-            Cancelar
-          </p>
-          <button
-            onClick={handleSave}
-            className="bg-gradient-to-r from-[#0E9647] to-[#165C38] font-bold text-white px-4 py-2 rounded hover:opacity-90 transition-all w-[230px]"
-          >
-            Salvar
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-50 rounded-xl w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl">
+        {/* CABEÇALHO FIXO */}
+        <div className="flex-shrink-0 p-5 border-b border-slate-200 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-slate-800">Editar Cadastro</h2>
+          <button onClick={onClose} className="p-2 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800">
+            <XMarkIcon className="h-6 w-6" />
           </button>
+        </div>
+
+        {/* ÁREA DE CONTEÚDO COM SCROLL */}
+        <div className="flex-grow p-5 overflow-y-auto">
+          <form className="space-y-6">
+            {/* SEÇÃO: DADOS PESSOAIS E DE CONTATO */}
+            <fieldset className="p-4 border rounded-lg bg-white">
+              <legend className="px-2 font-semibold text-slate-700">Dados Pessoais e Contato</legend>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                <div><label className="block text-sm font-medium text-slate-600">Nome Completo</label><input name="name" value={formData.name} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" /></div>
+                <div><label className="block text-sm font-medium text-slate-600">Apelido</label><input name="apelido" value={formData.apelido} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" /></div>
+                <div><label className="block text-sm font-medium text-slate-600">Gênero</label><select name="genero" value={formData.genero} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"><option value="">Selecione</option><option>Masculino</option><option>Feminino</option><option>Outro</option></select></div>
+                <div><label className="block text-sm font-medium text-slate-600">Telefone</label><input name="phone" value={formData.phone} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" /></div>
+                <div><label className="block text-sm font-medium text-slate-600">CPF</label><input name="cpf" value={formData.cpf} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" disabled /></div>
+                <div><label className="block text-sm font-medium text-slate-600">RG</label><input name="rg" value={formData.rg} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" /></div>
+
+              </div>
+            </fieldset>
+
+            {/* SEÇÃO: ENDEREÇO */}
+            <fieldset className="p-4 border rounded-lg bg-white">
+              <legend className="px-2 font-semibold text-slate-700">Endereço</legend>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                <div><label className="block text-sm font-medium text-slate-600">Localidade</label><select name="neighborhood" value={formData.neighborhood} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">{apiLocalOptions.map(opt => <option key={opt}>{opt}</option>)}</select></div>
+                <div><label className="block text-sm font-medium text-slate-600">Ponto de Referência</label><input name="referencia" value={formData.referencia} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" /></div>
+              </div>
+            </fieldset>
+
+            {/* SEÇÃO: CLASSE DO USUÁRIO (COM CHECKBOXES) */}
+            <fieldset className="p-4 border rounded-lg bg-white">
+              <legend className="px-2 font-semibold text-slate-700">Classe</legend>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
+                {["Agricultor", "Pescador", "Feirante", "Repartição Pública", "Outros"].map(cls => (
+                  <div key={cls} className="flex items-center">
+                    <input id={`class-${cls}`} type="checkbox" value={cls} checked={formData.classe.includes(cls)} onChange={handleClassChange} className="h-4 w-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500" />
+                    <label htmlFor={`class-${cls}`} className="ml-2 block text-sm text-slate-900">{cls}</label>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+
+            {/* SEÇÃO CONDICIONAL: DOCUMENTOS E BENEFÍCIOS */}
+            {(formData.classe.includes("Agricultor") || formData.classe.includes("Pescador")) && (
+              <fieldset className="p-4 border rounded-lg bg-white">
+                <legend className="px-2 font-semibold text-slate-700">Documentos e Benefícios</legend>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
+                  <div><label className="block text-sm font-medium text-slate-600">CAF</label><input name="caf" value={formData.caf} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm" /></div>
+                  <div><label className="block text-sm font-medium text-slate-600">CAR</label><input name="car" value={formData.car} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm" /></div>
+                  <div><label className="block text-sm font-medium text-slate-600">RGP</label><input name="rgp" value={formData.rgp} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm" /></div>
+                  <div><label className="block text-sm font-medium text-slate-600">GTA</label><input name="gta" value={formData.gta} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm" /></div>
+                  <BenefitInput
+                    label="Garantia Safra"
+                    name="garantiaSafra"
+                    value={formData.garantiaSafra}
+                    onChange={handleInputChange}
+                  />
+                  <BenefitInput
+                    label="Chapéu de Palha"
+                    name="chapeuPalha"
+                    value={formData.chapeuPalha}
+                    onChange={handleInputChange}
+                  />
+                  <BenefitInput
+                    label="PAA"
+                    name="paa"
+                    value={formData.paa}
+                    onChange={handleInputChange}
+                  />
+                  <BenefitInput
+                    label="PNAE"
+                    name="pnae"
+                    value={formData.pnae}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </fieldset>
+            )}
+
+          </form>
+        </div>
+
+        {/* RODAPÉ FIXO */}
+        <div className="flex-shrink-0 p-4 bg-white border-t border-slate-200 flex justify-end items-center gap-4">
+          <button onClick={onClose} className="px-6 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold hover:bg-slate-50 transition-colors">Cancelar</button>
+          <button onClick={handleSave} className="px-6 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors">Salvar Alterações</button>
         </div>
       </div>
     </div>
   );
+
 };

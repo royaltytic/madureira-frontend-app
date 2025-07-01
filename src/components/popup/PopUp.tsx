@@ -15,7 +15,7 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
   const [dataPedido, setDataPedido] = useState(
     new Date().toISOString().split("T")[0]
   );
-  
+
 
   const handlePedidoSelect = (servico: string, selected: boolean) => {
     setPedidosSelecionados((prev) => {
@@ -51,8 +51,8 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
       entreguePorId: "",
       imageUrl: "",
     }));
-    
-    
+
+
 
     onAddPedido(novosPedidos);
     onClose();
@@ -72,6 +72,7 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
     "Declaração de Agricultor/a",
     "Declaração de Pescador/a",
     "Caderneta de Pescador/a",
+    "Mudas"
   ];
 
   return (
@@ -80,11 +81,11 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
         <div className="flex w-full items-center justify-center gap-5 p-5 rounded-t-lg">
           <h1 className="text-black font-bold text-2xl">Novo Pedido </h1>
           <input
-  type="date"
-  value={dataPedido}
-  onChange={(e) => setDataPedido(e.target.value)}
-  className="border rounded-md px-2 py-1"
-/>
+            type="date"
+            value={dataPedido}
+            onChange={(e) => setDataPedido(e.target.value)}
+            className="border rounded-md px-2 py-1"
+          />
 
         </div>
 
@@ -125,8 +126,8 @@ export const PopUp = ({ onClose, onAddPedido }: PopupProps) => {
             onClick={handleAddPedidos}
             disabled={pedidosSelecionados.length === 0}
             className={`text-white font-bold rounded-lg w-40 h-9 my-2 ${pedidosSelecionados.length === 0
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-[#0E9647] to-[#165C38]"
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-[#0E9647] to-[#165C38]"
               }`}
           >
             Pedir

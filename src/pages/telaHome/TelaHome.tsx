@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Button } from "../../components/buttons/ButtonSimple";
 import { PopUp } from "../../components/popup/PopUp";
 import UltimosPedidos from "../../components/pedidos/UltimosPedidos";
 import api from "../../services/api";
@@ -8,6 +7,27 @@ import { PessoaProps } from "../../types/types";
 import { OrdersProps } from "../../types/types";
 import { UserProps } from "../../types/types";
 import Alert from "../../components/alerts/alertDesktop";
+
+import {
+  UserCircleIcon,
+  HashtagIcon,
+  DevicePhoneMobileIcon,
+  MapPinIcon,
+  PencilSquareIcon,
+  ArrowUturnLeftIcon,
+  PlusCircleIcon,
+  DocumentTextIcon,
+  SunIcon,
+  ShieldCheckIcon,
+  ShoppingBagIcon,
+  UserGroupIcon,
+  ScaleIcon,
+  CurrencyDollarIcon,
+  ClockIcon,
+  WrenchScrewdriverIcon,
+  SquaresPlusIcon,
+  TrashIcon
+} from '@heroicons/react/24/solid';
 
 
 interface HomeProps extends PessoaProps {
@@ -78,10 +98,10 @@ export const Home: React.FC<HomeProps> = ({
     carroDeMao,
     produtos,
     orders,
-    rgImageUrl,
-    cafImageUrl,
-    carImageUrl,
-    rgpImageUrl,
+    rgImageUrl: rgImageUrl ?? "",
+    cafImageUrl: cafImageUrl ?? "",
+    carImageUrl: carImageUrl ?? "",
+    rgpImageUrl: rgpImageUrl ?? "",
   });
 
   const [order, setOrder] = useState<OrdersProps[]>(orders);
@@ -104,7 +124,7 @@ export const Home: React.FC<HomeProps> = ({
     const intervalId = setInterval(fetchOrders, 5000); // A cada 5 segundos
     return () => clearInterval(intervalId); // Limpa o intervalo ao desmontar
   },);
-  
+
 
   // Estado para exibir alerta personalizado
   const [alert, setAlert] = useState<{
@@ -149,6 +169,31 @@ export const Home: React.FC<HomeProps> = ({
     setCurrentImageUrl(null);
   };
 
+  // Adicione esta nova função dentro do seu componente Home
+  const handleDeleteUser = async () => {
+    // 1. VERIFICAÇÃO: Checa se o usuário tem pedidos
+    if (order && order.length > 0) {
+      showAlert("error", "Não é possível excluir: este usuário possui pedidos registrados.");
+      return;
+    }
+
+    // 2. CONFIRMAÇÃO: Pede a confirmação final do usuário
+    if (window.confirm(`Tem certeza que deseja excluir permanentemente o usuário ${userData.name}? Esta ação não pode ser desfeita.`)) {
+      try {
+        // 3. EXECUÇÃO: Chama a API para deletar o usuário pelo ID
+        await api.delete(`/users/${userData.id}`);
+
+        // 4. FEEDBACK E AÇÃO FINAL: Mostra um alerta de sucesso e volta para a tela de pesquisa
+        showAlert("sucesso", "Usuário excluído com sucesso!");
+        voltarParaPesquisa(); // Retorna para a tela anterior
+
+      } catch (error) {
+        console.error("Erro ao excluir usuário:", error);
+        showAlert("error", "Ocorreu um erro ao tentar excluir o usuário. Tente novamente.");
+      }
+    }
+  };
+
   const salvarPedido = async (novosPedidos: OrdersProps[]) => {
 
     try {
@@ -178,13 +223,13 @@ export const Home: React.FC<HomeProps> = ({
       // Se a situação for "Finalizado", utilize a data passada ou, se não houver, a data atual.
       const finalData =
         situacao === "Finalizado" ? dataEntregue || new Date().toISOString() : null;
-  
+
       const response = await api.put(`/orders/${id}`, {
         usuario,
         situacao,
         dataEntregue: finalData,
       });
-  
+
       if (response.status === 200) {
         setOrder((prevOrder) =>
           prevOrder.map((order) =>
@@ -199,7 +244,7 @@ export const Home: React.FC<HomeProps> = ({
       showAlert("error", "Erro ao atualizar a situação do pedido. Tente novamente.");
     }
   };
-  
+
 
   const atualizarDadosUsuario = (updatedData: Partial<PessoaProps>) => {
     setUserData((prevUserData) => ({
@@ -209,304 +254,205 @@ export const Home: React.FC<HomeProps> = ({
   };
 
   return (
-    <section className="flex flex-col bg-white w-full h-full p-5">
-      <div className="">
-        <div className="flex w-full">
-          <div>
-            <div className="w-[400px] h-min bg-white text-black border border-white rounded-xl py-1 px-4 shadow-2xl">
-              <div className="flex">
-                <h2 className="text-2xl font-bold">Dados Pessoais</h2>
-                <svg
-                  className="w-7 h-7 ml-24 cursor-pointer"
-                  viewBox="0 0 48 48"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  onClick={openPopUpEdit}
-                >
-                  <path
-                    d="M22 7.99996H8C6.93913 7.99996 5.92172 8.42139 5.17157 9.17154C4.42143 9.92168 4 10.9391 4 12V40C4 41.0608 4.42143 42.0782 5.17157 42.8284C5.92172 43.5785 6.93913 44 8 44H36C37.0609 44 38.0783 43.5785 38.8284 42.8284C39.5786 42.0782 40 41.0608 40 40V26M37 4.99996C37.7956 4.20432 38.8748 3.75732 40 3.75732C41.1252 3.75732 42.2044 4.20432 43 4.99996C43.7956 5.79561 44.2426 6.87475 44.2426 7.99996C44.2426 9.12518 43.7956 10.2043 43 11L24 30L16 32L18 24L37 4.99996Z"
-                    stroke="#1E1E1E"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
 
+    <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 sm:p-6 bg-slate-100 min-h-screen">
 
-                {isPopUpEditOpen && (
-                  <PopUpEdit
-                    id={userData.id}
-                    name={userData.name}
-                    apelido={userData.apelido}
-                    genero={userData.genero}
-                    cpf={userData.cpf}
-                    rg={userData.rg}
-                    caf={userData.caf}
-                    car={userData.car}
-                    rgp={userData.rgp}
-                    gta={userData.gta}
-                    phone={userData.phone}
-                    neighborhood={userData.neighborhood}
-                    referencia={userData.referencia}
-                    adagro={userData.adagro}
-                    classe={userData.classe}
-                    associacao={userData.associacao}
-                    chapeuPalha={userData.chapeuPalha}
-                    garantiaSafra={userData.garantiaSafra}
-                    paa={userData.paa}
-                    pnae={userData.pnae}
-                    agua={userData.agua}
-                    imposto={userData.imposto}
-                    area={userData.area}
-                    tempo={userData.tempo}
-                    carroDeMao={userData.carroDeMao}
-                    produtos={userData.produtos}
-                    onClose={closePopUpEdit}
-                    onUpdate={atualizarDadosUsuario}
-                  />
-                )}
-              </div>
+      {/* ================================================================ */}
+      {/* COLUNA DA ESQUERDA (SIDEBAR DE INFORMAÇÕES E AÇÕES)            */}
+      {/* ================================================================ */}
+      <aside className="lg:col-span-1">
+        <div className="lg:sticky lg:top-6 space-y-6">
 
-              {
-                userData.classe.includes("Repartição Pública") ? (
-                  <>
-                    <p className="my-2 text-base">
-                      Nome: <span className="ml-1">{userData.name}</span>
-                    </p><p className="my-2 text-base">
-                      Classe: <span className="ml-1">{userData.classe}</span>
-                    </p>
-                    <p className="my-2 text-base">
-                      Associação: <span className="ml-1">{userData.associacao}</span>
-                    </p>
-                    <p className="my-2 text-base">
-                      Telefone: <span className="ml-1">{userData.phone}</span>
-                    </p>
-                    <p className="my-2 text-base">
-                      Localidade:{" "}
-                      <span className="ml-1">{userData.neighborhood}</span>
-                    </p>
-                    <p className="my-2 text-base">
-                      Referência: <span className="ml-1">{userData.referencia}</span>
-                    </p>
-                  </>
-                ) : (<><p className="my-2 text-base">
-                  Nome: <span className="ml-1">{userData.name}</span>
-                </p><p className="my-2 text-base">
-                    Apelido: <span className="ml-1">{userData.apelido}</span>
-                  </p>
-                  <p className="my-2 text-base">
-                  Gênero: <span className="ml-1">{userData.genero}</span></p>
-                  <p className="my-2 text-base">
-                    Classe:{" "}
-                    <span className="ml-1">
-                      {Array.isArray(userData.classe) && userData.classe.length > 0
-                        ? userData.classe.join(", ")
-                        : userData.classe || "não possui"}
-                    </span>
-                  </p><p className="my-2 text-base">
-                    CPF: <span className="ml-1">{userData.cpf}</span>
-                  </p><div className="cursor-pointer" onClick={() => userData.rgImageUrl && openImageModal(userData.rgImageUrl)}>
-                    <p className="my-2 text-base flex">
-                      RG: <span className="ml-1">{userData.rg}</span>
-                    </p>
-                  </div><p className="my-2 text-base">
-                    Telefone: <span className="ml-1">{userData.phone}</span>
-                  </p><p className="my-2 text-base">
-                    Localidade:{" "}
-                    <span className="ml-1">{userData.neighborhood}</span>
-                  </p><p className="my-2 text-base">
-                    Referência: <span className="ml-1">{userData.referencia}</span>
-                  </p>
-                  <p className="my-2 text-base">
-                      Associação: <span className="ml-1">{userData.associacao}</span>
-                  </p>
-                  </>)
-                  
-              }
-
-
-
-              {(userData.classe.includes("Agricultor") ||
-                userData.classe.includes("Pescador")) && (
-                  <>
-                    <div className="cursor-pointer" onClick={() => userData.cafImageUrl && openImageModal(userData.cafImageUrl)}>
-                      <p className="my-2 text-base flex">
-                        CAF: <span className="ml-1">{userData.caf ? userData.caf : "não possui"}</span>
-
-                      </p>
-                    </div>
-                    <div className="cursor-pointer" onClick={() => userData.carImageUrl && openImageModal(userData.carImageUrl)}
-                    ><p className="my-2 text-base flex">
-                        CAR: <span className="ml-1">{userData.car ? userData.car : "não possui"}</span>
-                      </p>
-
-                    </div>
-                    <div className="cursor-pointer" onClick={() => userData.rgpImageUrl && openImageModal(userData.rgpImageUrl)}>
-                      <p className="my-2 text-base flex">
-                        RGP: <span className="ml-1">{userData.rgp ? userData.rgp : "não possui"}</span>
-
-                      </p>
-                    </div>
-
-                    <p className="my-2 text-base">
-                      GTA: <span className="ml-1">{userData.gta ? userData.gta : "não possui"}</span>
-                    </p>
-                  </>
-                )}
-
-              {userData.classe.includes("Feirante") && (
-                <>
-                  <p className="my-2 text-base">
-                    Imposto: R$<span className="ml-1">{userData.imposto ? userData.imposto : "não possui"}</span>
-                  </p>
-                  <p className="my-2 text-base">
-                    Area: <span className="ml-1">{userData.area ? userData.area : "não possui"}</span>
-                  </p>
-                  <p className="my-2 text-base">
-                    Tempo de Feirante: <span className="ml-1">{userData.tempo ? userData.tempo + " anos" : "não possui"}</span>
-                  </p>
-                  <p className="my-2 text-base">
-                    Carro de mão: <span className="ml-1">{userData.carroDeMao ? userData.carroDeMao : "não possui"}</span>
-                  </p>
-                  <p className="my-2 text-base">
-                    Produtos:{" "}
-                    <span className="ml-1">
-                      {userData.produtos && userData.produtos.length > 0
-                        ? userData.produtos.join(", ")
-                        : "não possui"}
-                    </span>
-                  </p>
-                </>
-              )}
-            </div>
-
-            {(userData.classe.includes("Agricultor") ||
-              userData.classe.includes("Pescador")) && (
-                <div className="w-[400px] bg-white text-black border border-gray-200 rounded-xl mt-3 py-4 px-5 shadow-lg">
-                  <h2 className="text-2xl font-bold mb-3 text-gray-700">Benefícios</h2>
-                  <div className="grid grid-cols-2 gap-2">
-                    {userData.garantiaSafra && (
-                      <p
-                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
-                        title={`${userData.garantiaSafra}`}
-                      >
-                        Garantia Safra
-                      </p>
-                    )}
-
-                    {userData.chapeuPalha && (
-                      <p
-                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
-                        title={`${userData.chapeuPalha}`}
-                      >
-                        Chapéu de Palha
-                      </p>
-                    )}
-
-                    {userData.agua && (
-                      <p
-                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
-                        title="Possui acesso à água"
-                      >
-                        Água
-                      </p>
-                    )}
-
-                    {userData.adagro && (
-                      <p
-                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
-                        title="Possui CAD ADAGRO"
-                      >
-                        ADAGRO
-                      </p>
-                    )}
-
-                    {userData.paa && (
-                      <p
-                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
-                        title={`${userData.paa}`}
-                      >
-                        PAA
-                      </p>
-                    )}
-
-                    {userData.pnae && (
-                      <p
-                        className="py-2 px-3 text-sm bg-gray-100 text-gray-800 rounded-lg shadow-sm hover:bg-gray-200 transition"
-                        title={`${userData.pnae}`}
-                      >
-                        PNAE
-                      </p>
-                    )}
-
-                  </div>
-                </div>
-              )}
-
-            <div className="mt-3 w-[400px] flex justify-between items-center gap-5">
-              <Button
-                className="bg-gradient-to-r from-[#E03335] to-[#812F2C] font-bold text-white"
-                children="Voltar"
-                variant="transparent"
-                type="button"
-                onClick={voltarParaPesquisa}
-              />
-
-              {(userData.classe.includes("Agricultor") ||
-                userData.classe.includes("Pescador") || userData.classe.includes("Outros") || userData.classe.includes("Repartição Pública")) && (
-                  <Button
-                    className="bg-gradient-to-r from-[#0E9647] to-[#165C38] font-bold"
-                    children="Novo Pedido"
-                    size="large"
-                    variant="solid"
-                    type="submit"
-                    onClick={openPopUp}
-                  />
-                )}
-            </div>
-          </div>
-          <div className="flex flex-col">
-
-          </div>
-          <div className="text-black w-full ml-8 ">
-            {(userData.classe.includes("Agricultor") ||
-              userData.classe.includes("Pescador") || userData.classe.includes("Outros") || userData.classe.includes("Repartição Pública")) ? (
-              <UltimosPedidos 
-                pedidos={order || []} 
-                onUpdate={updatePedidoSituacao} 
-                onEdit={(pedido) => {
-                  console.log("Edit pedido:", pedido);
-                  // Implement the desired behavior for editing a pedido here
-                }} 
-              />
-            ) : (
-              <div className="w-full text-center text-red-500 font-bold mt-4">
-                Nenhum pedido disponível. Feirantes não têm acesso aos pedidos.
-              </div>
-            )}
-          </div>
-
-          {isPopUpOpen && (
-            <PopUp onClose={closePopUp} onAddPedido={salvarPedido} />
-          )}
-
-          {isImageModalOpen && currentImageUrl && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <div className="bg-white p-4 rounded max-w-lg max-h-[80vh] o4verflow-auto">
-                <img src={currentImageUrl} alt="Imagem do Documento" className="max-w-full max-h-[60vh] object-contain" />
-                <div className="flex w-full justify-between mt-2 gap-4">
-                  <button onClick={closeImageModal} className="bg-gradient-to-r from-[#E03335] to-[#812F2C] rounded w-1/2 h-8 text-center flex items-center justify-center font-semibold font-lg text-white">
-                    Fechar
-                  </button>
-                  <a href={currentImageUrl} download className="bg-gradient-to-r from-[#0E9647] to-[#165C38] rounded w-1/2 h-8 text-center flex items-center justify-center font-semibold font-lg text-white">
-                    Baixar
-                  </a>
+          {/* --- CARD DE DADOS PESSOAIS --- */}
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex justify-between items-center mb-4 border-b border-slate-200 pb-3">
+              <div className="flex items-center gap-3">
+                <UserCircleIcon className="h-10 w-10 text-indigo-500" />
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">{userData.name}</h2>
+                  <p className="text-sm text-slate-500">{userData.apelido}</p>
                 </div>
               </div>
+              <button onClick={openPopUpEdit} title="Editar Usuário" className="p-2 rounded-full hover:bg-slate-100 text-slate-500 hover:text-indigo-600 transition-colors">
+                <PencilSquareIcon className="h-6 w-6" />
+              </button>
             </div>
-          )}
-        </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2 text-slate-600"><HashtagIcon className="h-4 w-4 text-slate-400" /><strong>CPF:</strong> <span>{userData.cpf}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><DevicePhoneMobileIcon className="h-4 w-4 text-slate-400" /><strong>Telefone:</strong> <span>{userData.phone}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><MapPinIcon className="h-4 w-4 text-slate-400" /><strong>Localidade:</strong> <span>{userData.neighborhood}</span></div>
+              <div className="flex items-center gap-2 text-slate-600"><UserGroupIcon className="h-4 w-4 text-slate-400" /><strong>Classe:</strong> <span className="font-medium text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">{Array.isArray(userData.classe) ? userData.classe.join(', ') : userData.classe}</span></div>
+            </div>
+          </div>
+
+         {/* --- CARD DE DOCUMENTOS (DINÂMICO E OTIMIZADO) --- */}
+{(() => {
+  // 1. Define a lista de possíveis documentos
+  const documents = [
+    { label: 'RG', url: userData.rgImageUrl },
+    { label: 'CAF', url: userData.cafImageUrl },
+    { label: 'CAR', url: userData.carImageUrl },
+    { label: 'RGP', url: userData.rgpImageUrl }
+  ];
+
+  // 2. Filtra apenas os documentos que realmente existem (têm uma URL)
+  const availableDocuments = documents.filter(doc => doc.url);
+
+  // 3. Se não houver nenhum documento disponível, não renderiza nada
+  if (availableDocuments.length === 0) {
+    return null;
+  }
+
+  // 4. Se houver documentos, renderiza o card com os botões
+  return (
+    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+      <h3 className="font-semibold text-slate-800 mb-3">Documentos</h3>
+      <div className="grid grid-cols-2 gap-3">
+        {availableDocuments.map(doc => (
+          <button 
+            key={doc.label} 
+            onClick={() => openImageModal(doc.url!)} // A exclamação (!) garante ao TS que a url existe
+            className="flex items-center justify-center gap-2 text-sm text-slate-700 bg-slate-100 p-2 rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
+          >
+            <DocumentTextIcon className="h-5 w-5 flex-shrink-0" />
+            <span>{doc.label}</span>
+          </button>
+        ))}
       </div>
+    </div>
+  );
+})()}
+          {/* --- NOVO CARD: INFORMAÇÕES RURAIS / PESCA (CONDICIONAL) --- */}
+          {(userData.classe.includes("Agricultor") || userData.classe.includes("Pescador")) && (
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <h3 className="font-semibold text-slate-800 mb-3">Informações Rurais / Pesca</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2 text-slate-600"><DocumentTextIcon className="h-4 w-4 text-slate-400" /><strong>GTA:</strong> <span>{userData.gta || "Não possui"}</span></div>
+                <div className="flex items-center gap-2 text-slate-600"><DocumentTextIcon className="h-4 w-4 text-slate-400" /><strong>RGP:</strong> <span>{userData.rgp || "Não possui"}</span></div>
+                <div className="flex items-center gap-2 text-slate-600"><DocumentTextIcon className="h-4 w-4 text-slate-400" /><strong>CAF:</strong> <span>{userData.caf || "Não possui"}</span></div>
+                <div className="flex items-center gap-2 text-slate-600"><DocumentTextIcon className="h-4 w-4 text-slate-400" /><strong>CAR:</strong> <span>{userData.car || "Não possui"}</span></div>
+                <div className="flex items-center gap-2 text-slate-600"><DocumentTextIcon className="h-4 w-4 text-slate-400" /><strong>Associação:</strong> <span>{userData.associacao || "Não possui"}</span></div>
+              </div>
+            </div>
+          )}
+
+          {/* --- NOVO CARD: INFORMAÇÕES DE FEIRANTE (CONDICIONAL) --- */}
+          {userData.classe.includes("Feirante") && (
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <h3 className="font-semibold text-slate-800 mb-3">Informações de Feirante</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2 text-slate-600"><CurrencyDollarIcon className="h-4 w-4 text-slate-400" /><strong>Imposto:</strong> <span>R$ {userData.imposto || "0,00"}</span></div>
+                <div className="flex items-center gap-2 text-slate-600"><ScaleIcon className="h-4 w-4 text-slate-400" /><strong>Área (m²):</strong> <span>{userData.area || "Não informado"}</span></div>
+                <div className="flex items-center gap-2 text-slate-600"><ClockIcon className="h-4 w-4 text-slate-400" /><strong>Tempo de Feira:</strong> <span>{userData.tempo ? `${userData.tempo} anos` : "Não informado"}</span></div>
+                <div className="flex items-center gap-2 text-slate-600"><WrenchScrewdriverIcon className="h-4 w-4 text-slate-400" /><strong>Carro de Mão:</strong> <span>{userData.carroDeMao || "Não possui"}</span></div>
+                <div className="flex items-start gap-2 text-slate-600"><SquaresPlusIcon className="h-4 w-4 text-slate-400 mt-0.5" /><strong>Produtos:</strong> <span className="flex-1">{Array.isArray(userData.produtos) && userData.produtos.length > 0 ? userData.produtos.join(', ') : 'Não informado'}</span></div>
+              </div>
+            </div>
+          )}
+
+          {/* --- CARD DE BENEFÍCIOS (CONDICIONAL) --- */}
+          {(userData.garantiaSafra || userData.chapeuPalha || userData.paa || userData.pnae) && (
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <h3 className="font-semibold text-slate-800 mb-3">Benefícios Sociais</h3>
+              <div className="flex flex-wrap gap-2">
+                {userData.garantiaSafra && <span className="text-xs font-medium bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center gap-1"><ShieldCheckIcon className="h-4 w-4" />Garantia Safra</span>}
+                {userData.chapeuPalha && <span className="text-xs font-medium bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full flex items-center gap-1"><SunIcon className="h-4 w-4" />Chapéu de Palha</span>}
+                {userData.paa && <span className="text-xs font-medium bg-sky-100 text-sky-800 px-2 py-1 rounded-full flex items-center gap-1"><ShoppingBagIcon className="h-4 w-4" />PAA</span>}
+                {userData.pnae && <span className="text-xs font-medium bg-purple-100 text-purple-800 px-2 py-1 rounded-full flex items-center gap-1"><ShoppingBagIcon className="h-4 w-4" />PNAE</span>}
+              </div>
+            </div>
+          )}
+
+          {/* --- BOTÕES DE AÇÃO --- */}
+          <div className="flex items-center gap-4">
+            <button onClick={voltarParaPesquisa} className="w-full flex items-center justify-center gap-2 bg-white border border-slate-300 text-slate-700 font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-slate-100 transition-colors">
+              <ArrowUturnLeftIcon className="h-5 w-5" />
+              Voltar
+            </button>
+            <button onClick={openPopUp} className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 transition-colors">
+              <PlusCircleIcon className="h-5 w-5" />
+              Novo Pedido
+            </button>
+          </div>
+          <div className="mt-4 pt-4 border-t border-dashed border-slate-300">
+            <button
+              onClick={handleDeleteUser}
+              className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-700 font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-red-100 border border-red-200 transition-colors"
+            >
+              <TrashIcon className="h-5 w-5" />
+              Excluir Usuário
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* ================================================================ */}
+      {/* COLUNA DA DIREITA (CONTEÚDO PRINCIPAL)                         */}
+      {/* ================================================================ */}
+      <main className="lg:col-span-2">
+        <UltimosPedidos
+          pedidos={order || []}
+          onUpdate={updatePedidoSituacao}
+          onEdit={(pedido) => {
+
+            console.log("Edit pedido:", pedido);
+          }}
+        />
+      </main>
+
+      {isPopUpEditOpen && (
+        <PopUpEdit
+          id={userData.id}
+          name={userData.name}
+          apelido={userData.apelido}
+          genero={userData.genero}
+          cpf={userData.cpf}
+          rg={userData.rg}
+          caf={userData.caf}
+          car={userData.car}
+          rgp={userData.rgp}
+          gta={userData.gta}
+          phone={userData.phone}
+          neighborhood={userData.neighborhood}
+          referencia={userData.referencia}
+          adagro={userData.adagro}
+          classe={userData.classe}
+          associacao={userData.associacao}
+          chapeuPalha={userData.chapeuPalha}
+          garantiaSafra={userData.garantiaSafra}
+          paa={userData.paa}
+          pnae={userData.pnae}
+          agua={userData.agua}
+          imposto={userData.imposto}
+          area={userData.area}
+          tempo={userData.tempo}
+          carroDeMao={userData.carroDeMao}
+          produtos={userData.produtos}
+          onClose={closePopUpEdit}
+          onUpdate={atualizarDadosUsuario}
+        />
+      )}
+
+      {isPopUpOpen && (
+        <PopUp onClose={closePopUp} onAddPedido={salvarPedido} />
+      )}
+
+      {isImageModalOpen && currentImageUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded max-w-lg max-h-[80vh] o4verflow-auto">
+            <img src={currentImageUrl} alt="Imagem do Documento" className="max-w-full max-h-[60vh] object-contain" />
+            <div className="flex w-full justify-between mt-2 gap-4">
+              <button onClick={closeImageModal} className="bg-gradient-to-r from-[#E03335] to-[#812F2C] rounded w-1/2 h-8 text-center flex items-center justify-center font-semibold font-lg text-white">
+                Fechar
+              </button>
+              <a href={currentImageUrl} download className="bg-gradient-to-r from-[#0E9647] to-[#165C38] rounded w-1/2 h-8 text-center flex items-center justify-center font-semibold font-lg text-white">
+                Baixar
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {alert && (
         <Alert type={alert.type} text={alert.text} onClose={closeAlert} />
       )}

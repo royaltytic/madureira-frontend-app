@@ -116,3 +116,9 @@ export interface UserPropsConfig {
   ordersEntregues: OrdersProps[];
 }
   
+
+export interface DeliveryProps {
+  idDelivery: string;
+  name: string;
+  tipo?: string;
+}
