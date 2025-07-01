@@ -96,7 +96,7 @@ const PedidoCard: React.FC<PedidoCardProps> = React.memo(({ pedido, user, employ
       </div>
       <div className="p-3 flex flex-col flex-grow">
         <div className="flex justify-between items-start gap-2 mb-3">
-          <div className="pr-10">
+          <div className="pr-5">
             <p className="font-semibold text-xs text-slate-800 cursor-pointer" onClick={() => openImagePopup(pedido)}>{user ? `${user.name}, ${user.apelido}` : "..."}</p>
             {/* <p className="text-xs text-slate-500">{user?.cpf}</p> */}
           </div>
