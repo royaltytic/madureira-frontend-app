@@ -1469,7 +1469,7 @@ import ListaPedidos from "./pedidos/ListaPedidos";
 import api from "../services/api";
 import jsPDF from "jspdf";
 import "jspdf-autotable"; // Plugin para criação de tabelas no jsPDF
-import logo from "../assets/logoIcon.png";
+import logo from "../assets/logoIcon.jpeg";
 import { PessoaProps, UserProps, OrdersProps } from "../types/types";
 import BulkFinalizeModal from "./popup/BulkFinalizeModal";
 import Alert from "./alerts/alertDesktop";
