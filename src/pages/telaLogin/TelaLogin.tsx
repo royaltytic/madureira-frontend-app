@@ -1,4 +1,4 @@
-import Logo from "./assets/logo_nova.png";
+import Logo from "./assets/Logo.png";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import api from "../../services/api";
