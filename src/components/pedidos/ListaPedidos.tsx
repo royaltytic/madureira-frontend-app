@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import api from "../../services/api";
 import { UploadFileModal } from "../../pages/telaHome/UploadFileModal";
 import { DocumentMagnifyingGlassIcon } from '@heroicons/react/24/outline';
@@ -205,23 +205,32 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
 
   const isSelectionMode = selectedOrderIds.length > 0;
 
-  // Agrupa e ordena os pedidos conforme os dados provenientes da prop "pedidos"
-  // const sortedAndGroupedPedidos = useMemo(() => {
-  //   const grouped = pedidos.reduce<{ [key: string]: OrdersProps[] }>((acc, pedido) => {
-  //     const neighborhood = userMap[pedido.userId]?.neighborhood || "Outros";
-  //     if (!acc[neighborhood]) acc[neighborhood] = [];
-  //     acc[neighborhood].push(pedido);
-  //     return acc;
-  //   }, {});
+// Renomeamos a constante para maior clareza
+const groupedAndSortedPedidos = useMemo(() => {
+  // 1. Agrupa os pedidos por bairro
+  const grouped = pedidos.reduce<{ [key: string]: OrdersProps[] }>((acc, pedido) => {
+    const neighborhood = userMap[pedido.userId]?.neighborhood || "Sem Localidade";
+    if (!acc[neighborhood]) {
+      acc[neighborhood] = [];
+    }
+    acc[neighborhood].push(pedido);
+    return acc;
+  }, {});
 
-  //   return Object.values(grouped).flatMap((group) =>
-  //     group.sort((a, b) => {
-  //       if (a.situacao === "Aguardando" && b.situacao !== "Aguardando") return -1;
-  //       if (a.situacao !== "Aguardando" && b.situacao === "Aguardando") return 1;
-  //       return new Date(a.data).getTime() - new Date(b.data).getTime();
-  //     })
-  //   );
-  // }, [pedidos, userMap]);
+  // 2. Ordena os pedidos DENTRO de cada grupo
+  for (const neighborhood in grouped) {
+    grouped[neighborhood].sort((a, b) => {
+      // Prioriza "Aguardando" no topo
+      if (a.situacao === "Aguardando" && b.situacao !== "Aguardando") return -1;
+      if (a.situacao !== "Aguardando" && b.situacao === "Aguardando") return 1;
+      
+      // Ordena do mais antigo para o mais recente
+      return new Date(a.data).getTime() - new Date(b.data).getTime();
+    });
+  }
+
+  return grouped;
+}, [pedidos, userMap]);
 
   // // Função para formatar data
   // const formatDate = (dateString: string | null): string =>
@@ -285,20 +294,8 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
     setOrderImageFile(null);
   };
 
-  // // Seleciona ou deseleciona todos os pedidos visíveis
-  // const toggleSelectAll = () => {
-  //   const visibleIds = sortedAndGroupedPedidos.map((pedido) => pedido.id);
-  //   const allSelected = visibleIds.every((id) => selectedOrderIds.includes(id));
-  //   if (allSelected) {
-  //     visibleIds.forEach((id) => {
-  //       if (selectedOrderIds.includes(id)) toggleOrderSelection(id);
-  //     });
-  //   } else {
-  //     visibleIds.forEach((id) => {
-  //       if (!selectedOrderIds.includes(id)) toggleOrderSelection(id);
-  //     });
-  //   }
-  // };
+// Adicione esta função dentro do seu componente PedidosComponent
+
 
   // Inicia a edição do pedido
   const handleEditPedido = (pedido: OrdersProps) => {
@@ -447,22 +444,36 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
         <p className="mt-1 text-sm text-slate-600">Ajuste os filtros ou aguarde novas solicitações.</p>
       </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-          {pedidos.map((pedido) => (
-            <PedidoCard
-              key={pedido.id}
-              pedido={pedido}
-              user={userMap[pedido.userId]}
-              employeeMap={employeeMap}
-              selectedOrderIds={selectedOrderIds}
-              toggleOrderSelection={toggleOrderSelection}
-              handleEditPedido={handleEditPedido}
-              deleteOrder={deleteOrder}
-              openImagePopup={openImagePopup}
-              isSelectionMode={isSelectionMode}
-            />
-          ))}
-        </div>
+        <div className="space-y-6"> {/* Usamos space-y para espaçar os grupos */}
+  {/* Loop externo para cada BAIRRO */}
+  {Object.keys(groupedAndSortedPedidos).sort().map(neighborhood => (
+    <div key={neighborhood}>
+      {/* Cabeçalho do Grupo (Nome do Bairro) */}
+      <h2 className="text-base font-bold text-slate-600 mb-3 border-b-2 border-slate-200 pb-2">
+        {neighborhood}
+      </h2>
+      
+      {/* Grid para os cartões DENTRO do grupo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+        {/* Loop interno para cada PEDIDO dentro do bairro */}
+        {groupedAndSortedPedidos[neighborhood].map((pedido) => (
+          <PedidoCard
+            key={pedido.id}
+            pedido={pedido}
+            user={userMap[pedido.userId]}
+            employeeMap={employeeMap}
+            selectedOrderIds={selectedOrderIds}
+            toggleOrderSelection={toggleOrderSelection}
+            handleEditPedido={handleEditPedido}
+            deleteOrder={deleteOrder}
+            openImagePopup={openImagePopup}
+            isSelectionMode={isSelectionMode}
+          />
+        ))}
+      </div>
+    </div>
+  ))}
+</div>
       )}
       {editingPedido && (
   // FUNDO DO MODAL COM EFEITO DE DESFOQUE
