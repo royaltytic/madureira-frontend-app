@@ -26,8 +26,16 @@ import {
   ClockIcon,
   WrenchScrewdriverIcon,
   SquaresPlusIcon,
-  TrashIcon
+  TrashIcon,
+  
 } from '@heroicons/react/24/solid';
+
+interface BeneficioConfig {
+  key: keyof PessoaProps; // A chave DEVE ser um nome de propriedade de PessoaProps
+  label: string;
+  icon: React.ReactNode; // Tipo adequado para componentes React
+  styles: string;
+}
 
 
 interface HomeProps extends PessoaProps {
@@ -253,6 +261,17 @@ export const Home: React.FC<HomeProps> = ({
     }));
   };
 
+  const beneficiosConfig: BeneficioConfig[]  = [
+    { key: 'garantiaSafra', label: 'Garantia Safra', icon: <ShieldCheckIcon className="h-4 w-4" />, styles: 'bg-green-100 text-green-800' },
+    { key: 'chapeuPalha', label: 'Chapéu de Palha', icon: <SunIcon className="h-4 w-4" />, styles: 'bg-yellow-100 text-yellow-800' },
+    { key: 'paa', label: 'PAA', icon: <ShoppingBagIcon className="h-4 w-4" />, styles: 'bg-sky-100 text-sky-800' },
+    { key: 'pnae', label: 'PNAE', icon: <ShoppingBagIcon className="h-4 w-4" />, styles: 'bg-purple-100 text-purple-800' }
+  ];
+
+  const beneficiosDoUsuario = beneficiosConfig.filter(
+    (beneficio) => userData[beneficio.key] // A verificação é apenas esta!
+  );
+
   return (
 
     <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 sm:p-6 bg-slate-100 min-h-screen">
@@ -351,17 +370,24 @@ export const Home: React.FC<HomeProps> = ({
           )}
 
           {/* --- CARD DE BENEFÍCIOS (CONDICIONAL) --- */}
-          {(userData.garantiaSafra || userData.chapeuPalha || userData.paa || userData.pnae) && (
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <h3 className="font-semibold text-slate-800 mb-3">Benefícios Sociais</h3>
-              <div className="flex flex-wrap gap-2">
-                {userData.garantiaSafra && <span className="text-xs font-medium bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center gap-1"><ShieldCheckIcon className="h-4 w-4" />Garantia Safra</span>}
-                {userData.chapeuPalha && <span className="text-xs font-medium bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full flex items-center gap-1"><SunIcon className="h-4 w-4" />Chapéu de Palha</span>}
-                {userData.paa && <span className="text-xs font-medium bg-sky-100 text-sky-800 px-2 py-1 rounded-full flex items-center gap-1"><ShoppingBagIcon className="h-4 w-4" />PAA</span>}
-                {userData.pnae && <span className="text-xs font-medium bg-purple-100 text-purple-800 px-2 py-1 rounded-full flex items-center gap-1"><ShoppingBagIcon className="h-4 w-4" />PNAE</span>}
-              </div>
-            </div>
-          )}
+          {beneficiosDoUsuario.length > 0 && (
+      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <h3 className="font-semibold text-slate-800 mb-3">Benefícios Sociais</h3>
+        <div className="flex flex-wrap gap-2">
+          
+          {beneficiosDoUsuario.map((beneficio) => (
+            <span 
+              key={beneficio.key} 
+              className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 ${beneficio.styles}`}
+            >
+              {beneficio.icon}
+              {beneficio.label} ({String(userData[beneficio.key])}) {/* Converte o valor para string */}
+            </span>
+          ))}
+
+        </div>
+      </div>
+    )}
 
           {/* --- BOTÕES DE AÇÃO --- */}
           <div className="flex items-center gap-4">
@@ -397,6 +423,7 @@ export const Home: React.FC<HomeProps> = ({
 
             console.log("Edit pedido:", pedido);
           }}
+          usuario={usuario}
         />
       </main>
 

@@ -1,6 +1,13 @@
 import { useState, useEffect, useMemo, ChangeEvent } from "react";
 import api from "../../services/api";
 import { UploadFileModal } from "../../pages/telaHome/UploadFileModal";
+import BulkFinalizeModal from "../popup/BulkFinalizeModal";
+import { UserProps } from "../../types/types";
+import {
+  PencilSquareIcon,
+  TrashIcon,
+  Cog6ToothIcon, // Ícone para "Alterar Situação"
+} from "@heroicons/react/24/outline";
 
 interface PedidoProps {
   servico: string;
@@ -12,8 +19,9 @@ interface PedidoProps {
   userId: string;
   employeeId: string;
   entreguePorId: string;
-  imageUrl?: string;
+  imageUrl: string; // Ensure imageUrl is always a string
 }
+
 
 interface EmployeeProps {
   id: string;
@@ -22,6 +30,7 @@ interface EmployeeProps {
 
 interface UltimosPedidosProps {
   pedidos: PedidoProps[];
+  usuario: UserProps; // <-- ADICIONE ESTA PROP
   onUpdate: (id: string, situacao: string, dataEntregue?: string) => void;
   onEdit: (pedido: PedidoProps) => void;
 }
@@ -45,7 +54,7 @@ const getStatusClass = (situacao: string): string => {
   }
 };
 
-const UltimosPedidos: React.FC<UltimosPedidosProps> = ({ pedidos, onUpdate, onEdit }) => {
+const UltimosPedidos: React.FC<UltimosPedidosProps> = ({ pedidos, onUpdate, onEdit, usuario }) => {
   const [employeeMap, setEmployeeMap] = useState<{ [key: string]: EmployeeProps }>({});
   // const [tooltipPedidoId, setTooltipPedidoId] = useState<string | null>(null);
   const [confirmData, setConfirmData] = useState<{ id: string; newSituacao: string } | null>(null);
@@ -57,6 +66,9 @@ const UltimosPedidos: React.FC<UltimosPedidosProps> = ({ pedidos, onUpdate, onEd
   const [editForm, setEditForm] = useState({ servico: "", situacao: "", descricao: "", data: "" });
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [isEditingDeliveryDate, setIsEditingDeliveryDate] = useState<boolean>(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState<boolean>(false);
+  const [selectedOrderForBulk, setSelectedOrderForBulk] = useState<PedidoProps[]>([]);
+
 
   // Novo estado para o filtro
   const [filterText, setFilterText] = useState<string>("");
@@ -86,6 +98,20 @@ const UltimosPedidos: React.FC<UltimosPedidosProps> = ({ pedidos, onUpdate, onEd
       fetchMissingData();
     }
   }, [pedidos, employeeMap]); 
+
+  const handleOpenBulkModal = (pedido: PedidoProps) => {
+    setSelectedOrderForBulk([pedido]); // O modal espera um array, então passamos o pedido dentro de um
+    setIsBulkModalOpen(true);
+    setOpenMenu(null); // Fecha o menu de ações
+  };
+
+  const handleBulkUpdate = (updates: { id: string; situacao: string; dataEntregue?: string }[]) => {
+    // O modal retorna um array de atualizações, processamos cada uma
+    updates.forEach(update => {
+      onUpdate(update.id, update.situacao, update.dataEntregue);
+    });
+    setIsBulkModalOpen(false); // Fecha o modal após a confirmação
+  };
 
   // Ordena os pedidos conforme a situação e a data
   const sortedPedidos = useMemo(() => {
@@ -265,11 +291,38 @@ const UltimosPedidos: React.FC<UltimosPedidosProps> = ({ pedidos, onUpdate, onEd
                       <span className="text-xl font-bold">&#8942;</span>
                     </button>
                     {openMenu === pedido.id && (
-                      <div className="absolute right-0 mt-2 w-32 bg-white border rounded-md shadow-lg z-50">
-                        <button onClick={() => handleEditPedido(pedido)} className="w-full text-left px-4 py-2 hover:bg-slate-100 text-sm">Editar</button>
-                        <button onClick={() => deleteOrder(pedido.id)} className="w-full text-left px-4 py-2 hover:bg-slate-100 text-sm">Deletar</button>
-                      </div>
-                    )}
+  <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50 p-1">
+    {/* Botão Editar */}
+    <button 
+      onClick={() => handleEditPedido(pedido)} 
+      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 rounded-md flex items-center gap-2"
+    >
+      <PencilSquareIcon className="h-4 w-4" />
+      Editar Pedido
+    </button>
+    
+    {/* NOVA OPÇÃO: Alterar Situação */}
+    <button 
+      onClick={() => handleOpenBulkModal(pedido)} 
+      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 rounded-md flex items-center gap-2"
+    >
+      <Cog6ToothIcon className="h-4 w-4" />
+      Alterar Situação
+    </button>
+
+    <div className="border-t my-1 border-slate-200"></div> {/* Divisor visual */}
+
+    {/* Botão Deletar */}
+    <button 
+      onClick={() => deleteOrder(pedido.id)} 
+      className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-800 rounded-md flex items-center gap-2"
+    >
+      <TrashIcon className="h-4 w-4" />
+      Deletar Pedido
+    </button>
+  </div>
+)}
+
                   </div>
                 </div>
               </div>
@@ -433,6 +486,15 @@ const UltimosPedidos: React.FC<UltimosPedidosProps> = ({ pedidos, onUpdate, onEd
     </div>
   </div>
 )}
+
+{isBulkModalOpen && (
+        <BulkFinalizeModal
+          selectedOrders={selectedOrderForBulk}
+          usuario={usuario} // Passa a prop de usuário
+          onClose={() => setIsBulkModalOpen(false)}
+          onBulkFinalize={handleBulkUpdate}
+        />
+      )}
     </div>
   );
 };

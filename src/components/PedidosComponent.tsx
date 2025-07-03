@@ -9,6 +9,7 @@ import BulkFinalizeModal from "./popup/BulkFinalizeModal";
 import Alert from "./alerts/alertDesktop";
 import { MagnifyingGlassIcon, CalendarDaysIcon, ListBulletIcon, ArrowDownTrayIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import autoTable from "jspdf-autotable";
+import { Home } from "../pages/telaHome/TelaHome";
 
 declare module "jspdf" {
   interface jsPDF {
@@ -58,7 +59,17 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
 
   // Adicione estas constantes dentro de PedidosComponent, após `filteredOrders`
 
+  const [usuarioSelecionado, setUsuarioSelecionado] = useState<PessoaProps | null>(null);
 
+ // 1. Função que será chamada quando um card for clicado
+ const handleSelecionarUsuario = (pessoa: PessoaProps) => {
+  setUsuarioSelecionado(pessoa);
+};
+
+// 2. Função para o botão "Voltar" da TelaHome
+const handleVoltarParaLista = () => {
+  setUsuarioSelecionado(null);
+};
 
 
   const apiServicos = [
@@ -377,6 +388,15 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
   };
 
   return (
+
+    usuarioSelecionado ? (
+      <Home
+        {...usuarioSelecionado}
+        voltarParaPesquisa={handleVoltarParaLista}
+        usuario={usuario}
+      />
+    ) : (
+
     // Substitua a estrutura do seu `return` por esta base:
     // ESTRUTURA PRINCIPAL: GRID DE 2 COLUNAS (LG) E 1 COLUNA (PADRÃO)
     <section className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-4 sm:p-6 bg-slate-100 min-h-screen">
@@ -466,6 +486,9 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
       {/* COLUNA DA DIREITA (CONTEÚDO PRINCIPAL)                         */}
       {/* ================================================================ */}
       <main className="lg:col-span-3">
+
+
+
         <div className="bg-white rounded-xl shadow-sm border border-slate-200">
           <ListaPedidos
             pedidos={filteredOrders}
@@ -495,6 +518,7 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
             selectedOrderIds={selectedOrderIds}
             toggleOrderSelection={toggleOrderSelection}
             isSelectionMode={selectedOrderIds.length > 0}
+            onCardClick={handleSelecionarUsuario} // Added missing property
           />
         </div>
       </main>
@@ -550,7 +574,10 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
       )}
       {alertVisible && <Alert type={alertType} text={alertText} onClose={closeAlert} />}
     </section>
+    )
   );
+
+
 
 };
 
