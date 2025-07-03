@@ -137,14 +137,47 @@ const PedidoCard: React.FC<PedidoCardProps> = React.memo(({ pedido, user, employ
           <div className="flex-shrink-0 flex items-center gap-1">
             <div className={getStatusClass(pedido.situacao)}>{pedido.situacao}</div>
             <div className="relative">
-              <button onClick={() => setOpenMenu(!openMenu)} className="p-1 rounded-full hover:bg-slate-200 focus:outline-none"><span className="text-lg font-bold leading-none">&#8942;</span></button>
-              {openMenu && (
-                <div className="absolute right-0 mt-2 w-36 bg-white border rounded-md shadow-lg z-50">
-                  <button onClick={() => { handleEditPedido(pedido); setOpenMenu(false); }} className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"><PencilSquareIcon className="h-4 w-4" />Editar</button>
-                  <button onClick={() => { deleteOrder(pedido.id); setOpenMenu(false); }} className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"><TrashIcon className="h-4 w-4" />Deletar</button>
-                </div>
-              )}
-            </div>
+    {/* 1. Botão dos três pontos */}
+    <button 
+      onClick={(e) => {
+        e.stopPropagation(); // Impede o clique de chegar no card
+        setOpenMenu(!openMenu);
+      }} 
+      className="p-1 rounded-full hover:bg-slate-200 focus:outline-none"
+    >
+      <span className="text-lg font-bold leading-none">&#8942;</span>
+    </button>
+    
+    {openMenu && (
+    <div className="absolute right-0 mt-2 w-36 bg-white border rounded-md shadow-lg z-50">
+        {/* 2. Botão de Editar */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation(); // Impede o clique de chegar no card
+            handleEditPedido(pedido);
+            setOpenMenu(false);
+          }} 
+          className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+        >
+          <PencilSquareIcon className="h-4 w-4" />
+          Editar
+        </button>
+        
+        {/* 3. Botão de Deletar */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation(); // Impede o clique de chegar no card
+            deleteOrder(pedido.id);
+            setOpenMenu(false);
+          }} 
+          className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+        >
+          <TrashIcon className="h-4 w-4" />
+          Deletar
+        </button>
+    </div>
+    )}
+</div>
           </div>
         </div>
         <div className="space-y-1.5 text-xs text-slate-600 flex-grow">
