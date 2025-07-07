@@ -254,6 +254,10 @@ export const CadastroComponent = () => {
                   Feirante
                 </label>
                 <label className="flex items-center gap-2">
+                  <input type="checkbox" value="Pecuarista" {...register("classe")} />
+                  Pecuarista
+                </label>
+                <label className="flex items-center gap-2">
                   {/* Corrigido o valor para "Repartição Pública" */}
                   <input type="checkbox" value="Repartição Pública" {...register("classe")} />
                   Repartição Pública
@@ -357,7 +361,7 @@ export const CadastroComponent = () => {
                 </div>
               )}
 
-              {(selectedClasses.includes("Agricultor") || selectedClasses.includes("Pescador")) && (
+              {(selectedClasses.includes("Agricultor") || selectedClasses.includes("Pescador") || selectedClasses.includes("Pecuarista")) && (
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-col lg:flex-row gap-10 pr-2 w-full">
                     <Input

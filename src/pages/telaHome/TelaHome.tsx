@@ -375,15 +375,21 @@ export const Home: React.FC<HomeProps> = ({
         <h3 className="font-semibold text-slate-800 mb-3">Benefícios Sociais</h3>
         <div className="flex flex-wrap gap-2">
           
-          {beneficiosDoUsuario.map((beneficio) => (
-            <span 
-              key={beneficio.key} 
-              className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 ${beneficio.styles}`}
-            >
-              {beneficio.icon}
-              {beneficio.label} ({String(userData[beneficio.key])}) {/* Converte o valor para string */}
-            </span>
-          ))}
+        {beneficiosDoUsuario
+  .filter(beneficio => {
+    const valor = userData[beneficio.key];
+    // A condição abaixo remove os itens onde o valor é null, undefined ou "Não"
+    return valor != null && valor !== 'Não';
+  })
+  .map(beneficio => (
+    <span 
+      key={beneficio.key} 
+      className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 ${beneficio.styles}`}
+    >
+      {beneficio.icon}
+      {beneficio.label}
+    </span>
+  ))}
 
         </div>
       </div>

@@ -42,8 +42,6 @@ const BulkFinalizeModal: React.FC<BulkFinalizeModalProps> = ({
     return initialDates;
   });
 
-  // Estados para a lista de entregadores e o entregador selecionado
-  const [selectedDeliverer, setSelectedDeliverer] = useState<string>("");
 
   const [isLoading, setIsLoading] = useState(false);
   const [userMap, setUserMap] = useState<{ [key: string]: PessoaProps }>({});
@@ -62,29 +60,34 @@ const [isCrudLoading, setIsCrudLoading] = useState<boolean>(false);
 const [editingDeliverer, setEditingDeliverer] = useState<DeliveryProps | null>(null);
 const [delivererName, setDelivererName] = useState<string>("");
 
-// --- EFEITO PARA BUSCAR OS ENTREGADORES ---
+// Adicione um novo estado para controlar se a busca já foi feita
+const [hasFetchedDeliverers, setHasFetchedDeliverers] = useState(false);
+
+// --- EFEITO PARA BUSCAR OS ENTREGADORES (VERSÃO CORRIGIDA E ÚNICA) ---
 useEffect(() => {
-  const fetchDeliveryPeople = async () => {
-    // Não busca se a lista já foi carregada ou se a ação não é a correta
-    if (deliveryPeople.length > 0 || selectedAction !== "Inserir na Lista") return;
-
-    setIsLoading(true); // Usa o loading principal do modal
-    try {
-      const response = await api.get<DeliveryProps[]>("/delivery");
-      setDeliveryPeople(response.data);
-      if (response.data.length > 0) {
-        setSelectedDelivererId(response.data[0].idDelivery);
+  // Só busca se a aba for a correta E se a busca ainda não tiver sido feita
+  if (selectedAction === "Inserir na Lista" && !hasFetchedDeliverers) {
+    const fetchDeliveryPeople = async () => {
+      setIsLoading(true);
+      try {
+        const response = await api.get<DeliveryProps[]>("/delivery");
+        setDeliveryPeople(response.data);
+        if (response.data.length > 0) {
+          setSelectedDelivererId(response.data[0].idDelivery);
+        }
+        // Marca que a busca foi concluída com sucesso
+        setHasFetchedDeliverers(true); 
+      } catch (error) {
+        console.error("Erro ao buscar entregadores:", error);
+        alert("Não foi possível carregar a lista de entregadores.");
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Erro ao buscar entregadores:", error);
-      alert("Não foi possível carregar a lista de entregadores.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  fetchDeliveryPeople();
-}, [selectedAction, deliveryPeople.length]); // Executa quando a aba "Inserir na Lista" é selecionada
+    fetchDeliveryPeople();
+  }
+}, [selectedAction, hasFetchedDeliverers]); // Executa quando a aba "Inserir na Lista" é selecionada
 
 // --- FUNÇÕES DE MANIPULAÇÃO (HANDLERS) DO CRUD ---
 
@@ -177,7 +180,7 @@ const handleCancelEdit = () => {
         setDeliveryPeople(response.data);
         // Define um valor padrão para o select
         if (response.data.length > 0) {
-          setSelectedDeliverer(response.data[0].idDelivery);
+          setSelectedDelivererId(response.data[0].idDelivery);
         }
       } catch (error) {
         console.error("Erro ao buscar entregadores:", error);
@@ -199,11 +202,11 @@ const handleCancelEdit = () => {
     setIsLoading(true);
 
     // Validação para "Inserir na Lista"
-    if (selectedAction === "Inserir na Lista" && !selectedDeliverer) {
-        alert("Por favor, selecione um entregador.");
-        setIsLoading(false);
-        return;
-    }
+    if (selectedAction === "Inserir na Lista" && !selectedDelivererId) { // <-- Use selectedDelivererId
+      alert("Por favor, selecione um entregador.");
+      setIsLoading(false);
+      return;
+  }
 
     let uploadedFileUrl: string | null = null;
     // Faz upload da imagem apenas se a ação for "Finalizar"
@@ -245,7 +248,8 @@ const handleCancelEdit = () => {
             }
 
             case "Inserir na Lista": {
-              const deliverer = deliveryPeople.find(d => d.idDelivery === selectedDeliverer);
+              const deliverer = deliveryPeople.find(d => d.idDelivery === selectedDelivererId); 
+  
               
               // Monta o payload específico para "Inserir na Lista", sem chaves extras
               payload = { 

@@ -307,6 +307,19 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
                     value={formData.pnae}
                     onChange={handleInputChange}
                   />
+                  <BenefitInput
+                    label="ADAGRO"
+                    name="adagro"
+                    value={formData.adagro}
+                    onChange={handleInputChange}
+                  />
+                  <BenefitInput
+                    label="SSA Água"
+                    name="agua"
+                    value={formData.agua}
+                    onChange={handleInputChange}
+                  />
+
                 </div>
               </fieldset>
             )}

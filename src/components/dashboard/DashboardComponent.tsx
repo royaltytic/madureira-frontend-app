@@ -4,16 +4,18 @@ import GraficoPorServicos from "./Rechart";
 import GraficoPedidosUltimos3Meses from "./LineChart";
 import GraficoGeneroTotal from "./GraficoGeneroTotal";
 import TotalPedidosAno from "./TotalPedidosAno";
+import {ModalPessoas} from "./ModalPessoa";
+import { PessoaProps } from "../../types/types";
 
-interface Beneficios {
-  aguaSim: number;
-  garantidaSafraSim: number;
-  adagroSim: number;
-  chapeuPalhaSim: number;
-  paaSim: number;
-  pnaeSim: number;
-  detalhes: Detalhes;
-}
+// interface Beneficios {
+//   aguaSim: number;
+//   garantidaSafraSim: number;
+//   adagroSim: number;
+//   chapeuPalhaSim: number;
+//   paaSim: number;
+//   pnaeSim: number;
+//   detalhes: Detalhes;
+// }
 
 interface Genero {
   totalHomens: number;
@@ -22,6 +24,21 @@ interface Genero {
   feirantes: { homens: number; mulheres: number };
   pescadores: { homens: number; mulheres: number };
   outros: { homens: number; mulheres: number };
+}
+
+interface ListasDePessoas {
+  totalPessoas: Pessoa[];
+  totalAgricultores: Pessoa[];
+  totalPescadores: Pessoa[];
+  totalFeirantes: Pessoa[];
+  totalOutros: Pessoa[];
+  totalReparticaoPublica: Pessoa[];
+  aguaSim: Pessoa[];
+  garantidaSafraSim: Pessoa[];
+  adagroSim: Pessoa[];
+  chapeuPalhaSim: Pessoa[];
+  paaSim: Pessoa[];
+  pnaeSim: Pessoa[];
 }
 
 interface Detalhes {
@@ -45,15 +62,37 @@ interface Detalhes {
   }
 }
 
+interface BeneficiosListas {
+  garantidaSafraSim: Pessoa[];
+  adagroSim: Pessoa[];
+  chapeuPalhaSim: Pessoa[];
+  paaSim: Pessoa[];
+  pnaeSim: Pessoa[];
+  aguaSim: Pessoa[];
+}
+
 interface Estatisticas {
-  totalPessoas: number;
-  totalAgricultores: number;
-  totalPescadores: number;
-  totalFeirantes: number;
-  totalOutros: number;
-  totalReparticaoPublica: number;
-  beneficios: Beneficios;
+  // Listas no nível principal
+  totalPessoas: Pessoa[];
+  totalAgricultores: Pessoa[];
+  totalPescadores: Pessoa[];
+  totalFeirantes: Pessoa[];
+  totalOutros: Pessoa[];
+  totalReparticaoPublica: Pessoa[];
+  totalPecuaristas: Pessoa[];
+
+  // Objeto aninhado para os benefícios
+  beneficios: BeneficiosListas & { detalhes: Detalhes };
+
   genero: Genero;
+}
+
+interface Pessoa {
+  id: string;
+  name: string;
+  cpf?: string;
+  user: PessoaProps
+  // Adicione outros campos que desejar exibir
 }
 
 const LoadingSpinner: React.FC = () => {
@@ -66,21 +105,42 @@ const LoadingSpinner: React.FC = () => {
 
 export const DashboardComponent: React.FC = () => {
   const [estatisticas, setEstatisticas] = useState<Estatisticas | null>(null);
-  const [abaSelecionada, setAbaSelecionada] = useState<"pessoas" | "pedidos" | "dados">("pedidos");
-  
-  // Novo estado para alternar entre os gráficos dentro da aba de Pedidos
+  const [abaSelecionada, setAbaSelecionada] = useState<"pessoas" | "pedidos">("pedidos");
   const [abaPedidos, setAbaPedidos] = useState<"ultimos3meses" | "totalpedidosano">("ultimos3meses");
+
+  const [modalAberto, setModalAberto] = useState(false);
+  const [pessoasNoModal, setPessoasNoModal] = useState<Pessoa[]>([]); // Lista a ser mostrada no modal
+  const [tituloModal, setTituloModal] = useState("");
 
   useEffect(() => {
     api
       .get("/users/estatisticas")
       .then((response) => {
+        console.log("DADOS RECEBIDOS DA API:", response.data); // <-- Adicione esta linha
         setEstatisticas(response.data);
       })
       .catch((error) => {
         console.error("Erro ao carregar as estatísticas", error);
       });
   }, []);
+
+  const handleCardClick = (filtroKey: string, titulo: string) => {
+        if (!estatisticas) return;
+
+        let lista: Pessoa[] = [];
+
+        // Verifica se a chave existe no nível principal
+        if (filtroKey in estatisticas) {
+            lista = estatisticas[filtroKey as keyof Estatisticas] as Pessoa[];
+        // Senão, verifica se existe dentro de 'beneficios'
+        } else if (filtroKey in estatisticas.beneficios) {
+            lista = estatisticas.beneficios[filtroKey as keyof BeneficiosListas];
+        }
+        
+        setTituloModal(titulo);
+        setPessoasNoModal(lista || []);
+        setModalAberto(true);
+    };
 
   if (!estatisticas) {
     return (
@@ -90,8 +150,31 @@ export const DashboardComponent: React.FC = () => {
     );
   }
 
+  const cardsPessoas = [
+    { label: "Cadastradas", key: 'totalPessoas' as keyof ListasDePessoas },
+    { label: "Agricultores", key: 'totalAgricultores' as keyof ListasDePessoas },
+    { label: "Pescadores", key: 'totalPescadores' as keyof ListasDePessoas },
+    { label: "Feirantes", key: 'totalFeirantes' as keyof ListasDePessoas },
+    { label: "Rep. Pública", key: 'totalReparticaoPublica' as keyof ListasDePessoas },
+    { label: "Outros", key: 'totalOutros' as keyof ListasDePessoas },
+    { label: "SSA Água", key: 'aguaSim' as keyof ListasDePessoas },
+    { label: "Garantia Safra", key: 'garantidaSafraSim' as keyof ListasDePessoas },
+    { label: "Adagro", key: 'adagroSim' as keyof ListasDePessoas },
+    { label: "Chapéu Palha", key: 'chapeuPalhaSim' as keyof ListasDePessoas },
+    { label: "PAA", key: 'paaSim' as keyof ListasDePessoas },
+    { label: "PNAE", key: 'pnaeSim' as keyof ListasDePessoas },
+  ];
+
   return (
     <div className="w-full h-full p-4 md:p-7">
+<ModalPessoas
+            isOpen={modalAberto}
+            onClose={() => setModalAberto(false)}
+            title={tituloModal}
+            people={pessoasNoModal}
+            isLoading={false} // O carregamento agora é instantâneo!
+        />
+
       {/* Título com abas */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-bold text-xl md:text-2xl text-gray-700">
@@ -129,29 +212,30 @@ export const DashboardComponent: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Coluna 1: Cartões de estatísticas */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
-            {[
-              { label: "Cadastradas", value: estatisticas.totalPessoas },
-              { label: "Agricultores", value: estatisticas.totalAgricultores },
-              { label: "Pescadores", value: estatisticas.totalPescadores },
-              { label: "Feirantes", value: estatisticas.totalFeirantes },
-              { label: "Rep. Pública", value: estatisticas.totalReparticaoPublica },
-              { label: "Outros", value: estatisticas.totalOutros },
-              { label: "SSA Água", value: estatisticas.beneficios.aguaSim },
-              { label: "Garantia Safra", value: estatisticas.beneficios.garantidaSafraSim },
-              { label: "Adagro", value: estatisticas.beneficios.adagroSim },
-              { label: "Chapéu Palha", value: estatisticas.beneficios.chapeuPalhaSim },
-              { label: "PAA", value: estatisticas.beneficios.paaSim },
-              { label: "PNAE", value: estatisticas.beneficios.pnaeSim },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="w-full text-center border rounded-xl p-3 bg-white shadow-sm hover:shadow-md transition-shadow"
-              >
-                <p className="text-gray-500 text-sm md:text-base">{item.label}</p>
-                <p className="font-semibold text-xl text-gray-800">{item.value}</p>
-              </div>
-            ))}
-          </div>
+          {cardsPessoas.map((item) => {
+                // Lógica para encontrar a contagem correta
+                let count = 0;
+                if (item.key in estatisticas) {
+                    const list = estatisticas[item.key as keyof Estatisticas];
+                    if(Array.isArray(list)) count = list.length;
+                } else if (item.key in estatisticas.beneficios) {
+                    const list = estatisticas.beneficios[item.key as keyof BeneficiosListas];
+                    if(Array.isArray(list)) count = list.length;
+                }
+
+                return (
+                    <button
+                        key={item.key}
+                        onClick={() => handleCardClick(item.key, item.label)}
+                        disabled={count === 0}
+                        className="w-full text-center border rounded-xl p-3 bg-white shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <p className="text-gray-500 text-sm md:text-base">{item.label}</p>
+                        <p className="font-semibold text-xl text-gray-800">{count}</p>
+                    </button>
+                );
+            })}
+            </div>
 
           {/* Coluna 2 e 3: Gráficos */}
           <div className="lg:col-span-2 flex flex-col gap-6">

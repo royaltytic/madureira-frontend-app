@@ -90,7 +90,7 @@ export const PersonScheme = z
       ).optional(),
 
     classe: z.array(
-      z.enum(["Agricultor", "Pescador", "Feirante", "Outros", "Repartição Pública"])
+      z.enum(["Agricultor", "Pescador", "Feirante", "Outros", "Repartição Pública", "Pecuarista"])
     ),
   })
   .superRefine((data, ctx) => {
