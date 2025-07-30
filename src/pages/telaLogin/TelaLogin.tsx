@@ -1,7 +1,6 @@
 // src/pages/telaLogin/TelaLogin.tsx
 
 import { useState, FormEvent } from 'react';
-import { Link } from 'react-router-dom'; // 1. Usar Link para navegação
 import { useAuth } from '../../context/AuthContext'; // 2. Importar o hook de autenticação
 import { toast } from 'react-hot-toast'; // Para um feedback mais moderno
 
@@ -9,13 +8,12 @@ import Logo from "./assets/logo_nova.png";
 import fundo from "./assets/fundo.jpeg";
 import { EyeIcon, EyeSlashIcon, UserIcon } from "@heroicons/react/24/solid";
 
-// interface TelaLoginProps {
-//   onChangeMode: (mode: string) => void;
-// }
+interface TelaLoginProps {
+  onChangeMode: (mode: string) => void;
+}
 
-
-
-export const TelaLogin = () => {
+// CORREÇÃO: A prop 'onChangeMode' agora é desestruturada do objeto de props.
+export const TelaLogin = ({ onChangeMode }: TelaLoginProps) => {
   const { login } = useAuth(); // 3. Pegar a função de login do contexto
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
@@ -99,9 +97,9 @@ export const TelaLogin = () => {
                 </div>
                 
                 {/* 7. Usar <Link> para navegação sem recarregar a página */}
-                <Link to="/esqueci-minha-senha" className="block text-right text-white underline text-xl cursor-pointer">
+                <a onClick={() => onChangeMode("recuperar")} className="block text-right text-white underline text-xl cursor-pointer">
                   Esqueci minha Senha
-                </Link>
+                </a>
 
                 <button
                   type="submit" // O botão principal deve ser do tipo submit

@@ -11,8 +11,8 @@ export const handleExportCSV = (people: Pessoa[], title: string) => {
 
     // 2. Mapeia os dados para o formato de linha do CSV
     const rows = people.map(person => {
-        const nome = person.name || person.user?.name || 'Não informado';
-        const cpf = person.cpf || person.user?.cpf || 'Não informado';
+        const nome = person.name || person.name || 'Não informado';
+        const cpf = person.cpf || person.cpf || 'Não informado';
         
         // Garante que valores com vírgulas ou aspas sejam tratados corretamente
         const safeNome = `"${nome.replace(/"/g, '""')}"`;
