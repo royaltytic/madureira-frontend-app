@@ -63,7 +63,7 @@ export const TelaLogin = ({ onChangeMode }: TelaLoginProps) => {
                   <label className="block text-2xl text-white mb-2">Usuário</label>
                   <div className="relative">
                     <input
-                      className="w-full h-16 pl-4 pr-16 rounded-2xl bg-white text-2xl font-bold shadow-lg outline-none"
+                      className="w-full h-16 pl-4 pr-16 rounded-2xl bg-white text-2xl font-bold shadow-lg outline-none normal-case"
                       type="text"
                       value={user}
                       onChange={(e) => setUser(e.target.value)}
@@ -79,7 +79,7 @@ export const TelaLogin = ({ onChangeMode }: TelaLoginProps) => {
                   <label className="block text-2xl text-white mb-2">Senha</label>
                   <div className="relative">
                     <input
-                      className="w-full h-16 pl-4 pr-16 rounded-2xl bg-white text-2xl font-bold shadow-lg outline-none"
+                      className="w-full h-16 pl-4 pr-16 rounded-2xl bg-white text-2xl font-bold shadow-lg outline-none normal-case"
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}

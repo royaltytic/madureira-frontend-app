@@ -1,7 +1,14 @@
 import React from 'react';
-import { Pessoa } from '../../types/types';
+import { PessoaProps } from '../../types/types';
 import { LoadingSpinner } from '../loading/LoadingSpinner';
 import { handleExportCSV } from '../../utils/ExportToCSV';
+
+interface Pessoa extends PessoaProps {
+    id: string;
+    name: string;
+    cpf: string;
+    user: PessoaProps
+}
 
 interface ModalProps {
     isOpen: boolean;
@@ -10,6 +17,8 @@ interface ModalProps {
     people: Pessoa[];
     isLoading: boolean;
 }
+
+
 
 const EmptyState: React.FC = () => (
     <div className="text-center py-10 px-6 bg-slate-50 rounded-lg">
@@ -23,6 +32,8 @@ const EmptyState: React.FC = () => (
 
 
 export const ModalPessoas: React.FC<ModalProps> = ({ isOpen, onClose, title, people, isLoading }) => {
+
+    
 
     if (!isOpen) {
         return null;
@@ -60,9 +71,10 @@ export const ModalPessoas: React.FC<ModalProps> = ({ isOpen, onClose, title, peo
                     ) : people.length > 0 ? (
                         <ul className="space-y-3">
                             {people.map(person => {
+                                console.log(person)
                                 // Lógica para obter os dados de forma segura
-                                const nome = person.name || person.name;
-                                const cpf = person.cpf || person.cpf;
+                                const nome = person.user.name || person.name;
+                                const cpf = person.user.cpf || person.cpf;
                                 const inicial = nome ? nome.charAt(0).toUpperCase() : '?';
 
                                 return (

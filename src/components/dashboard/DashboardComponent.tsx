@@ -1,30 +1,29 @@
-// src/pages/DashboardGeralPage.tsx
-
 import React, { useState, useEffect, useRef } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Users, Leaf, Ship, ShoppingCart, Building, User, Droplets, ShieldCheck, Sun, Sprout, Wheat, CheckSquare, Briefcase, FileText, Calendar as CalendarIcon } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingSpinner } from '../loading/LoadingSpinner';
-import { ModalPessoas } from './ModalPessoa';
+import { handleExportCSV } from '../../utils/ExportToCSV';
 import DashboardOperacional from './DashboardOperacional';
 
 // --- Dependências para o seletor de data ---
-// É necessário instalar: npm install react-day-picker date-fns
 import { DayPicker, DateRange } from 'react-day-picker';
-import 'react-day-picker/dist/style.css'; // Importe o CSS no seu arquivo principal (ex: App.tsx ou main.tsx)
+import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { PessoaProps } from '../../types/types';
 
 
 // ===================================================================
-// 1. TIPOS (Idealmente em src/types/dashboardGeral.ts)
+// 1. TIPOS
 // ===================================================================
 type Periodo = string | DateRange;
 
-interface PessoaProps {
+interface Pessoa extends PessoaProps {
     id: string;
     name: string;
-    cpf?: string;
+    cpf: string;
+    user: PessoaProps
 }
 
 interface Genero {
@@ -50,29 +49,113 @@ interface DetalhesBeneficios {
 }
 
 interface ListasBeneficios {
-    garantidaSafraSim: PessoaProps[];
-    adagroSim: PessoaProps[];
-    chapeuPalhaSim: PessoaProps[];
-    paaSim: PessoaProps[];
-    pnaeSim: PessoaProps[];
-    aguaSim: PessoaProps[];
+    garantidaSafraSim: Pessoa[];
+    adagroSim: Pessoa[];
+    chapeuPalhaSim: Pessoa[];
+    paaSim: Pessoa[];
+    pnaeSim: Pessoa[];
+    aguaSim: Pessoa[];
 }
 
 interface EstatisticasPessoas {
-    totalPessoas: PessoaProps[];
-    totalAgricultores: PessoaProps[];
-    totalPescadores: PessoaProps[];
-    totalFeirantes: PessoaProps[];
-    totalOutros: PessoaProps[];
-    totalReparticaoPublica: PessoaProps[];
-    totalPecuaristas: PessoaProps[];
+    totalPessoas: Pessoa[];
+    totalAgricultores: Pessoa[];
+    totalPescadores: Pessoa[];
+    totalFeirantes: Pessoa[];
+    totalOutros: Pessoa[];
+    totalReparticaoPublica: Pessoa[];
+    totalPecuaristas: Pessoa[];
     beneficios: ListasBeneficios & { detalhes: DetalhesBeneficios };
     genero: Genero;
 }
 
 // ===================================================================
-// 2. SUBCOMPONENTES DO DASHBOARD DE PESSOAS
+// 2. MODAL E SUBCOMPONENTES
 // ===================================================================
+
+// --- Componente ModalPessoas ---
+interface ModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    people: Pessoa[];
+    isLoading: boolean;
+}
+
+const EmptyState: React.FC = () => (
+    <div className="text-center py-10 px-6 bg-slate-50 rounded-lg">
+        <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 className="mt-2 text-sm font-semibold text-slate-800">Nenhum resultado</h3>
+        <p className="mt-1 text-sm text-slate-500">Nenhuma pessoa foi encontrada para este critério.</p>
+    </div>
+);
+
+const ModalPessoas: React.FC<ModalProps> = ({ isOpen, onClose, title, people, isLoading }) => {
+    if (!isOpen) {
+        return null;
+    }
+
+    return (
+        <div className="fixed inset-0 bg-slate-900/75 z-50 flex justify-center items-center p-4 transition-opacity duration-300 ease-in-out" onClick={onClose}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-fade-in-scale" onClick={e => e.stopPropagation()}>
+                <header className="flex justify-between items-center p-5 border-b border-slate-200">
+                    <h2 className="text-lg font-bold text-slate-800">{title}</h2>
+                    <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors" aria-label="Fechar modal">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </header>
+                <main className="p-6 overflow-y-auto">
+                    {isLoading ? (
+                        <LoadingSpinner />
+                    ) : people.length > 0 ? (
+                        <ul className="space-y-3">
+                            {people.map(person => {
+                                // CORREÇÃO: Acessar os dados diretamente do objeto 'person'.
+                                // A estrutura de dados da API não possui um objeto 'user' aninhado.
+                                const nome = person.name;
+                                const cpf = person.cpf;
+                                const inicial = nome ? nome.charAt(0).toUpperCase() : '?';
+
+                                return (
+                                    <li key={person.id} className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-center space-x-4 hover:border-blue-400 hover:bg-blue-50 transition-all">
+                                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center">
+                                            <span className="text-slate-500 font-semibold">{inicial}</span>
+                                        </div>
+                                        <div className="flex-grow">
+                                            <p className="font-semibold text-slate-900">{nome || 'Nome não disponível'}</p>
+                                            {cpf && <p className="text-sm text-slate-500">CPF: {cpf}</p>}
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    ) : (
+                        <EmptyState />
+                    )}
+                </main>
+                <footer className="p-4 bg-slate-50 border-t border-slate-200 rounded-b-xl flex justify-end items-center gap-3">
+                    <button onClick={onClose} className="px-5 py-2 bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition-colors">
+                        Fechar
+                    </button>
+                    <button onClick={() => handleExportCSV(people, title)} disabled={people.length === 0 || isLoading} className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed">
+                        Exportar como CSV
+                    </button>
+                </footer>
+            </div>
+            <style>{`
+                @keyframes fadeInScale {
+                    from { opacity: 0; transform: scale(.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-fade-in-scale { animation: fadeInScale 0.3s ease-out forwards; }
+            `}</style>
+        </div>
+    );
+};
 
 // --- Componente de Item da Lista de KPIs ---
 interface KpiListItemProps {
@@ -185,7 +268,7 @@ type KpiConfigItem = {
 
 const DashboardPessoas: React.FC<DashboardPessoasProps> = ({ estatisticas }) => {
     const [modalAberto, setModalAberto] = useState(false);
-    const [pessoasNoModal, setPessoasNoModal] = useState<PessoaProps[]>([]);
+    const [pessoasNoModal, setPessoasNoModal] = useState<Pessoa[]>([]);
     const [tituloModal, setTituloModal] = useState("");
 
     const categoriasConfig: KpiConfigItem[] = [
@@ -220,9 +303,9 @@ const DashboardPessoas: React.FC<DashboardPessoasProps> = ({ estatisticas }) => 
     };
 
     const handleCardClick = (filtroKey: keyof EstatisticasPessoas | keyof ListasBeneficios, titulo: string) => {
-        let lista: PessoaProps[] = [];
+        let lista: Pessoa[] = [];
         if (filtroKey in estatisticas) {
-            lista = estatisticas[filtroKey as keyof EstatisticasPessoas] as PessoaProps[];
+            lista = estatisticas[filtroKey as keyof EstatisticasPessoas] as Pessoa[];
         } else if (filtroKey in estatisticas.beneficios) {
             lista = estatisticas.beneficios[filtroKey as keyof ListasBeneficios];
         }
@@ -282,7 +365,7 @@ const TabButton: React.FC<{ label: string; icon: React.ElementType; isActive: bo
     </button>
 );
 
-// --- [NOVO] Componente de Filtro de Período com Date Picker ---
+// --- Componente de Filtro de Período com Date Picker ---
 interface PeriodSelectorProps {
     period: Periodo;
     onPeriodChange: (period: Periodo) => void;
@@ -293,14 +376,12 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({ period, onPeriodChange 
     const datePickerRef = useRef<HTMLDivElement>(null);
 
     const periodOptions = [
-
         { key: 'this_month', label: 'Este Mês' },
-        { key: 'last_6_mouths', label: '6 meses' },
+        { key: 'last_6_months', label: '6 meses' }, // CORREÇÃO: "mouths" para "months"
         { key: 'this_year', label: 'Este Ano' },
         { key: 'all_time', label: 'Todo' },
     ];
 
-    // Fecha o date picker se clicar fora
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
@@ -314,7 +395,6 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({ period, onPeriodChange 
     const handleDateChange = (range: DateRange | undefined) => {
         if (range) {
             onPeriodChange(range);
-            // setShowDatePicker(false); // Opcional: fechar ao selecionar
         }
     };
 
@@ -405,7 +485,6 @@ export default function DashboardComponent() {
     const [selectedService, setSelectedService] = useState<string>('todos');
     const [selectedPeriod, setSelectedPeriod] = useState<Periodo>('this_month');
 
-    // Busca de dados para a aba 'pessoas'
     useEffect(() => {
         if (abaSelecionada === 'pessoas' && !estatisticas) {
             setIsLoading(true);
@@ -416,7 +495,6 @@ export default function DashboardComponent() {
         }
     }, [abaSelecionada, estatisticas]);
 
-    // Busca de serviços para o filtro da aba 'pedidos'
     useEffect(() => {
         if (abaSelecionada === 'pedidos') {
             api.get("/servicos")
@@ -433,11 +511,23 @@ export default function DashboardComponent() {
         if (isLoading) {
             return <div className="min-h-[60vh] flex items-center justify-center"><LoadingSpinner /></div>;
         }
+
+        // CORREÇÃO: Formata o período para o formato de string esperado pelo DashboardOperacional.
+        const getPeriodForOperacional = (): string => {
+            if (typeof selectedPeriod === 'string') {
+                return selectedPeriod;
+            }
+            if (selectedPeriod?.from) {
+                const start = format(selectedPeriod.from, 'yyyy-MM-dd');
+                const end = selectedPeriod.to ? format(selectedPeriod.to, 'yyyy-MM-dd') : start;
+                return `daterange:${start}_${end}`;
+            }
+            return 'this_month'; // Fallback para um valor padrão
+        };
         
         switch(abaSelecionada) {
             case 'pedidos':
-                // O DashboardOperacional agora recebe os filtros diretamente
-                return <DashboardOperacional service={selectedService} period={selectedPeriod} />;
+                return <DashboardOperacional service={selectedService} period={getPeriodForOperacional()} />;
             case 'pessoas':
                 return estatisticas ? <DashboardPessoas estatisticas={estatisticas} /> : <div className="text-center text-gray-500 py-10">Não foi possível carregar os dados.</div>;
             default:
@@ -454,13 +544,11 @@ export default function DashboardComponent() {
 
             <div className="border-b border-gray-200">
                 <nav className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 -mb-px">
-                    {/* Abas na esquerda */}
                     <div className="flex space-x-6">
                         <TabButton label="Análise de Pedidos" icon={FileText} isActive={abaSelecionada === 'pedidos'} onClick={() => setAbaSelecionada('pedidos')} />
                         <TabButton label="Análise de Pessoas" icon={Users} isActive={abaSelecionada === 'pessoas'} onClick={() => setAbaSelecionada('pessoas')} />
                     </div>
 
-                    {/* Filtros na direita (apenas para a aba de pedidos) */}
                     {abaSelecionada === 'pedidos' && (
                         <FilterControls
                             services={services}
