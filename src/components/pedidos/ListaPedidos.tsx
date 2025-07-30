@@ -1,38 +1,16 @@
 import React, { useState, useEffect, useMemo } from "react";
 import api from "../../services/api";
-import { UploadFileModal } from "../../pages/telaHome/UploadFileModal";
+
 import { DocumentMagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import {
-  PhoneIcon,
-  MapPinIcon,
-  CalendarDaysIcon,
-  CheckBadgeIcon,
-  PencilSquareIcon,
-  TrashIcon,
-  ChatBubbleBottomCenterTextIcon
-} from '@heroicons/react/24/solid';
+import { PessoaProps, OrdersProps } from "../../types/types";
+import { PedidoCard } from "../cards/PedidoCard";
+import Alert from "../alerts/alertDesktop";
+import { EditPedidoModal } from "../modal/EditPedidoModal";
 
-import { PessoaProps } from "../../types/types";
-
-interface EmployeeProps {
+export interface EmployeeProps {
   id: string;
   user: string;
 }
-
-interface OrdersProps {
-  servico: string;
-  data: string;
-  dataEntregue: string | null;
-  situacao: string;
-  descricao: string;
-  id: string;
-  userId: string;
-  employeeId: string;
-  entreguePorId: string;
-  imageUrl?: string;
-}
-
-
 
 interface ListaPedidosProps {
   pedidos: OrdersProps[];
@@ -44,210 +22,6 @@ interface ListaPedidosProps {
   onCardClick: (user: PessoaProps) => void; // 1. A prop já estava aqui, o que é ótimo.
 }
 
-const getStatusClass = (situacao: string): string => {
-  // Classes base para todas as etiquetas, com cantos arredondados
-  const baseClasses = "px-3 py-1 text-xs font-bold rounded-full inline-block";
-
-  if (situacao.startsWith("Lista")) {
-    // Azul suave
-    return `${baseClasses} bg-blue-100 text-blue-800`;
-  }
-
-  switch (situacao) {
-    case "Aguardando":
-      // Vermelho suave
-      return `${baseClasses} bg-red-100 text-red-800`;
-    case "Finalizado":
-      // Verde suave
-      return `${baseClasses} bg-green-100 text-green-800`;
-    case "Cancelado":
-      // Laranja suave
-      return `${baseClasses} bg-orange-100 text-orange-800`;
-    default:
-      // Cinza suave para outros casos
-      return `${baseClasses} bg-gray-100 text-gray-800`;
-  }
-};
-
-interface PedidoCardProps {
-  pedido: OrdersProps;
-  user: PessoaProps | undefined;
-  employeeMap: { [key: string]: EmployeeProps };
-  toggleOrderSelection: (orderId: string) => void;
-  selectedOrderIds: string[];
-  handleEditPedido: (pedido: OrdersProps) => void;
-  deleteOrder: (id: string) => Promise<void>;
-  openImagePopup: (pedido: OrdersProps) => void;
-  isSelectionMode: boolean;
-  onCardClick: (user: PessoaProps) => void;
-}
-
-const PedidoCard: React.FC<PedidoCardProps> = React.memo(({ pedido, user, employeeMap, toggleOrderSelection, selectedOrderIds, handleEditPedido, deleteOrder, openImagePopup, isSelectionMode, onCardClick }) => {
-  const [openMenu, setOpenMenu] = useState(false);
-  const formatDate = (dateString: string | null): string => dateString ? new Date(dateString).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "---";
-
-    // Condição para saber se este card específico está selecionado
-    const isSelected = selectedOrderIds.includes(pedido.id);
-
-     // NOVO: Funções para parar a propagação do clique
-  const handleInteractiveClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-  
-  // const handleMenuClick = (e: React.MouseEvent) => {
-  //   e.stopPropagation();
-  //   setOpenMenu(!openMenu);
-  // };
-
-  return (
-        // Adicionado um padding superior (pt-4) para garantir que o checkbox centralizado não seja cortado
-        <div className="group relative bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col pt-4 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-indigo-200" 
-        onClick={() => user && onCardClick(user)}>
-      
-       {/* --- CONTÊINER DO CHECKBOX COM LÓGICA DE POSICIONAMENTO --- */}
-       <div className={`
-          absolute z-10
-          transition-all duration-300 ease-in-out
-          left-2  /* A posição horizontal é sempre a mesma */
-
-          /* A posição VERTICAL e a OPACIDADE agora dependem do MODO DE SELEÇÃO */
-          ${isSelectionMode 
-            ? '-top-2 opacity-100' 
-            : 'top-2 opacity-0 group-hover:opacity-100'
-          }
-
-          /* O efeito de "cápsula" (fundo, sombra, escala) ainda depende da SELEÇÃO INDIVIDUAL */
-          ${isSelected ? '  scale-110' : ''}
-      `} 
-      onClick={handleInteractiveClick}>
-        <input 
-          type="checkbox" 
-          className="form-checkbox h-5 w-5 text-indigo-600 cursor-pointer rounded focus:ring-indigo-500 border-slate-300" 
-          checked={isSelected} 
-          onChange={() => toggleOrderSelection(pedido.id)} 
-        />
-      </div>
-
-      <div className="p-3 pt-0 flex flex-col flex-grow">
-        <div className="flex justify-between items-start gap-2 mb-3">
-          <div className="pr-5">
-            <p className="font-semibold text-xs text-slate-800 cursor-pointer" onClick={() => openImagePopup(pedido)}>{user ? `${user.name}, ${user.apelido}` : "..."}</p>
-            {/* <p className="text-xs text-slate-500">{user?.cpf}</p> */}
-          </div>
-          <div className="flex-shrink-0 flex items-center gap-1">
-            <div className={getStatusClass(pedido.situacao)}>{pedido.situacao}</div>
-            <div className="relative">
-    {/* 1. Botão dos três pontos */}
-    <button 
-      onClick={(e) => {
-        e.stopPropagation(); // Impede o clique de chegar no card
-        setOpenMenu(!openMenu);
-      }} 
-      className="p-1 rounded-full hover:bg-slate-200 focus:outline-none"
-    >
-      <span className="text-lg font-bold leading-none">&#8942;</span>
-    </button>
-    
-    {openMenu && (
-    <div className="absolute right-0 mt-2 w-36 bg-white border rounded-md shadow-lg z-50">
-        {/* 2. Botão de Editar */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation(); // Impede o clique de chegar no card
-            handleEditPedido(pedido);
-            setOpenMenu(false);
-          }} 
-          className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
-        >
-          <PencilSquareIcon className="h-4 w-4" />
-          Editar
-        </button>
-        
-        {/* 3. Botão de Deletar */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation(); // Impede o clique de chegar no card
-            deleteOrder(pedido.id);
-            setOpenMenu(false);
-          }} 
-          className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
-        >
-          <TrashIcon className="h-4 w-4" />
-          Deletar
-        </button>
-    </div>
-    )}
-</div>
-          </div>
-        </div>
-        <div className="space-y-1.5 text-xs text-slate-600 flex-grow">
-          {/* Localização */}
-
-          <p className="flex items-center gap-1.5">
-
-            <MapPinIcon className="h-4 w-4 text-slate-400" />
-
-            {user?.neighborhood || "Sem localidade"}{user?.referencia ? `, ${user.referencia}` : ''}
-
-          </p>
-
-
-
-          {/* Telefone */}
-
-          {user?.phone && (
-
-            <p className="flex items-center gap-1.5">
-
-              <PhoneIcon className="h-4 w-4 text-slate-400" />
-
-              {user.phone}
-
-            </p>
-
-          )}
-
-
-
-          {/* Descrição do Pedido (com ícone corrigido) */}
-
-          {pedido?.descricao ? (
-
-            // Se tiver descrição, mostra o texto normal
-
-            <p className="flex items-center gap-1.5">
-
-              <ChatBubbleBottomCenterTextIcon className="h-4 w-4 text-slate-400" />
-
-              {pedido.descricao}
-
-            </p>
-
-          ) : (
-
-            // Se NÃO tiver, mostra a mensagem padrão com estilo diferente (itálico e mais claro)
-
-            <p className="flex items-center gap-1.5 text-slate-400 italic">
-
-              <ChatBubbleBottomCenterTextIcon className="h-4 w-4" />
-
-              Sem descrição
-
-            </p>
-
-          )}
-        </div>
-        <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
-          <div className="flex items-center gap-1.5" title={`Solicitado por: ${pedido.employeeId ? employeeMap[pedido.employeeId]?.user || 'N/A' : 'N/A'}`}><CalendarDaysIcon className="h-4 w-4" /> <span>{formatDate(pedido.data)}</span></div>
-          <div className="flex items-center gap-1.5" title={`Entregue por: ${pedido.entreguePorId ? employeeMap[pedido.entreguePorId]?.user || 'N/A' : 'N/A'}`}><CheckBadgeIcon className="h-4 w-4 text-green-500" /> <span>{formatDate(pedido.dataEntregue)}</span></div>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-
-
 const ListaPedidos: React.FC<ListaPedidosProps> = ({
   pedidos,
   onUpdate,
@@ -258,26 +32,9 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
   // Mapas de dados de usuários e funcionários
   const [userMap, setUserMap] = useState<{ [key: string]: PessoaProps }>({});
   const [employeeMap, setEmployeeMap] = useState<{ [key: string]: EmployeeProps }>({});
-  // const [tooltipPedidoId, setTooltipPedidoId] = useState<string | null>(null);
-
-  
-
-  // Estados para modais e upload
-  const [isUpdatePopupOpen, setIsUpdatePopupOpen] = useState<boolean>(false);
-  const [selectedPedidoForUpdate, setSelectedPedidoForUpdate] = useState<OrdersProps | null>(null);
   const [selectedPedidoForImage, setSelectedPedidoForImage] = useState<OrdersProps | null>(null);
-  const [orderImageFile, setOrderImageFile] = useState<File | null>(null);
   const [isFinalizing, setIsFinalizing] = useState<boolean>(false);
-  const [dataEntregue, setDataEntregue] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
-
-  // Estados para edição
   const [editingPedido, setEditingPedido] = useState<OrdersProps | null>(null);
-  const [editForm, setEditForm] = useState({ servico: "", situacao: "", descricao: "", data: "" });
-  // const [openMenu, setOpenMenu] = useState<string | null>(null);
-
-  // Não usamos estado interno para a lista de pedidos. Utilizamos diretamente a prop "pedidos".
 
   // Busca dados de usuários e funcionários para cada pedido
   useEffect(() => {
@@ -355,116 +112,38 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
     return grouped;
   }, [pedidos, userMap]);
 
-  // // Função para formatar data
-  // const formatDate = (dateString: string | null): string =>
-  //   dateString
-  //     ? new Date(dateString).toLocaleDateString("pt-BR", { timeZone: "UTC" })
-  //     : "---";
-
   // Abre modal para visualização da imagem
   const openImagePopup = (pedido: OrdersProps) => {
     setSelectedPedidoForImage(pedido);
   };
 
-  // Finaliza o pedido com possível upload de imagem
-  const finalizeOrder = async () => {
-    if (!selectedPedidoForUpdate) return;
-    setIsFinalizing(true);
-
-    let imageUrl: string | null = null;
-
-    if (orderImageFile) {
-      const formData = new FormData();
-      formData.append("file", orderImageFile);
-
-      try {
-        const response = await api.post(`/upload/order`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        imageUrl = response.data.imageUrl;
-      } catch (error) {
-        console.error("Erro ao enviar imagem:", error);
-        alert("Erro ao enviar a imagem. Tente novamente.");
-        setIsFinalizing(false);
-        return;
-      }
-    }
-
-    try {
-      await api.put(`/orders/${selectedPedidoForUpdate.id}`, {
-        situacao: "Finalizado",
-        dataEntregue,
-        imageUrl,
-      });
-
-      // Chamamos onUpdate para que o componente pai atualize sua lista de pedidos
-      await onUpdate(selectedPedidoForUpdate.id, "Finalizado", dataEntregue);
-
-      setIsUpdatePopupOpen(false);
-      setSelectedPedidoForUpdate(null);
-      setOrderImageFile(null);
-    } catch (error) {
-      console.error("Erro ao atualizar pedido:", error);
-      alert("Erro ao atualizar pedido. Tente novamente.");
-    }
-
-    setIsFinalizing(false);
-  };
-
-  const cancelUpdate = () => {
-    setIsUpdatePopupOpen(false);
-    setSelectedPedidoForUpdate(null);
-    setOrderImageFile(null);
-  };
-
-  // Adicione esta função dentro do seu componente PedidosComponent
-
-
   // Inicia a edição do pedido
   const handleEditPedido = (pedido: OrdersProps) => {
     setEditingPedido(pedido);
-    setEditForm({
-      servico: pedido.servico,
-      situacao: pedido.situacao,
-      descricao: pedido.descricao,
-      data: pedido.data.split("T")[0] || new Date().toISOString().split("T")[0],
-    });
-    // setOpenMenu(null);
   };
 
-  const handleEditInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setEditForm({ ...editForm, [e.target.name]: e.target.value });
-  };
-
-  const finalizeEdit = async () => {
+  const handleSaveEdit = async (updatedData: Partial<OrdersProps>) => {
     if (editingPedido) {
-      // Formata a data no padrão pt-BR antes de enviar
-      const formattedDate = new Date(editForm.data).toLocaleDateString("pt-BR", {
-        timeZone: "UTC",
-      });
-
-      const updatedPedido: OrdersProps = {
-        ...editingPedido,
-        servico: editForm.servico,
-        situacao: editForm.situacao,
-        descricao: editForm.descricao,
-        data: formattedDate, // Usa a data formatada
-      };
-
+      setIsFinalizing(true); // Reutilizamos o estado de 'loading'
       try {
-        await api.put(`/orders/edit/${editingPedido.id}`, updatedPedido);
-        // Aqui também chamamos onUpdate para que o pai atualize os dados com as alterações feitas
+        await api.put(`/orders/edit/${editingPedido.id}`, updatedData);
+        
         await onUpdate(
-          updatedPedido.id,
-          updatedPedido.situacao,
-          updatedPedido.dataEntregue || undefined
+          editingPedido.id,
+          updatedData.situacao || editingPedido.situacao,
+          
         );
-        setEditingPedido(null);
+        
+        setEditingPedido(null); 
       } catch (error) {
         console.error("Erro ao editar o pedido:", error);
-        alert("Erro ao editar o pedido. Tente novamente.");
+        <Alert 
+          type="error" 
+          text="Erro ao editar o pedido. Por favor, tente novamente." 
+          onClose={() => console.log("Alert closed")}
+        />
+      } finally {
+        setIsFinalizing(false);
       }
     }
   };
@@ -473,50 +152,25 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
     if (window.confirm("Tem certeza que deseja deletar este pedido?")) {
       try {
         await api.delete(`/orders/${id}`);
-        // Após a deleção, espera-se que o componente pai atualize a prop "pedidos"
-        alert("Pedido deletado com sucesso!");
+        <Alert 
+          type="sucesso" 
+          text="Pedido deletado com sucesso!" 
+          onClose={() => console.log("Alert closed")}
+        />
       } catch (error) {
         console.error("Erro ao deletar o pedido:", error);
-        alert("Erro ao deletar o pedido. Tente novamente.");
+        <Alert 
+          type="error" 
+          text="Erro ao deletar o pedido. Por favor, tente novamente." 
+          onClose={() => console.log("Alert closed")}
+        />
       }
     }
   };
 
   return (
     <div className="flex flex-col items-center py-4 px-2">
-      {/* Modal de atualização com upload */}
-      {isUpdatePopupOpen && selectedPedidoForUpdate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white p-6 rounded-lg shadow-md w-80 text-center">
-            <UploadFileModal onFileSelected={setOrderImageFile} />
-            <div className="mt-4">
-              <label className="font-semibold">Data de Entrega:</label>
-              <input
-                type="date"
-                value={dataEntregue}
-                onChange={(e) => setDataEntregue(e.target.value)}
-                className="border rounded-md p-2 w-full mt-2"
-              />
-            </div>
-            <div className="flex justify-center gap-4 mt-4">
-              <button
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded"
-                onClick={cancelUpdate}
-              >
-                Cancelar
-              </button>
-              <button
-                disabled={isFinalizing}
-                className={`bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded ${isFinalizing ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                onClick={finalizeOrder}
-              >
-                Finalizar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* Modal para exibir o anexo (imagem do pedido) */}
       {selectedPedidoForImage && (
@@ -591,7 +245,7 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
                  deleteOrder={deleteOrder}
                  openImagePopup={openImagePopup}
                  isSelectionMode={isSelectionMode}
-                 onCardClick={onCardClick} // Esta linha agora funciona, pois onCardClick existe neste escopo.
+                 onCardClick={onCardClick} 
                />
                 ))}
               </div>
@@ -600,70 +254,13 @@ const ListaPedidos: React.FC<ListaPedidosProps> = ({
         </div>
       )}
       {editingPedido && (
-        // FUNDO DO MODAL COM EFEITO DE DESFOQUE
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-
-          {/* CARD DO MODAL COM LAYOUT FLEXÍVEL */}
-          <div className="bg-slate-50 rounded-xl w-full max-w-md h-auto max-h-[90vh] flex flex-col shadow-2xl">
-
-            {/* 1. CABEÇALHO FIXO */}
-            <header className="flex-shrink-0 p-4 sm:p-5 border-b border-slate-200 flex justify-between items-center">
-              <h2 className="text-lg font-bold text-slate-800">
-                Editar Pedido
-              </h2>
-              <button
-                onClick={() => setEditingPedido(null)}
-                className="p-1.5 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-colors"
-                title="Fechar"
-              >
-                {/* Ícone de "X" para fechar */}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </header>
-
-            {/* 2. ÁREA DE CONTEÚDO COM ROLAGEM */}
-            <main className="flex-grow p-4 sm:p-5 overflow-y-auto">
-              <form className="space-y-4">
-                <div>
-                  <label htmlFor="servico" className="block text-sm font-medium text-slate-700">Serviço</label>
-                  <input type="text" id="servico" name="servico" value={editForm.servico} onChange={handleEditInputChange} className="mt-1 w-full py-1 px-2 border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
-                </div>
-                <div>
-                  <label htmlFor="situacao" className="block text-sm font-medium text-slate-700">Situação</label>
-                  <input type="text" id="situacao" name="situacao" value={editForm.situacao} onChange={handleEditInputChange} className="mt-1 w-full py-1 px-2 border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
-                </div>
-                <div>
-                  <label htmlFor="descricao" className="block text-sm font-medium text-slate-700">Descrição</label>
-                  <textarea id="descricao" name="descricao" value={editForm.descricao} onChange={handleEditInputChange} className="mt-1 w-full py-1 px-2 border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" rows={3} />
-                </div>
-                <div>
-                  <label htmlFor="data" className="block text-sm font-medium text-slate-700">Data</label>
-                  <input type="date" id="data" name="data" value={editForm.data} onChange={handleEditInputChange} className="mt-1 w-full py-1 px-2 border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
-                </div>
-              </form>
-            </main>
-
-            {/* 3. RODAPÉ FIXO COM BOTÕES DE AÇÃO */}
-            <footer className="flex-shrink-0 p-4 sm:p-5 bg-white border-t border-slate-200 flex justify-end items-center gap-4">
-              <button
-                className="px-5 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold hover:bg-slate-50 transition-colors"
-                onClick={() => setEditingPedido(null)}
-              >
-                Cancelar
-              </button>
-              <button
-                className="px-5 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors disabled:bg-indigo-300"
-                onClick={finalizeEdit}
-                disabled={isFinalizing} // Assumindo que você tenha um estado de loading
-              >
-                {isFinalizing ? "Salvando..." : "Salvar Alterações"}
-              </button>
-            </footer>
-
-          </div>
-        </div>
+        <EditPedidoModal
+        isOpen={!!editingPedido}
+        pedido={editingPedido}
+        onClose={() => setEditingPedido(null)}
+        onSave={handleSaveEdit}
+        isSaving={isFinalizing}
+      />
       )}
     </div>
   );

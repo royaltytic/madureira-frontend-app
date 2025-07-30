@@ -1,164 +1,234 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+import { useEmployees } from './hooks/useEmployee';
+import { EmployeeCard } from '../components/cards/EmployeeCard';
+import { ConfirmationModal } from './modal/ConfimationModal';
+import { EmployeeModal } from '../components/modal/EmployeeModal';
+import { useAuth } from '../context/AuthContext';
+import { AddEmployeeCard } from '../components/cards/AddEmployeeCard';
+import { EmployeeFormData } from '../utils/EmployeeSchema';
+import { UserProps } from '../types/types';
 import api from '../services/api';
+import { LoadingSpinner } from './loading/LoadingSpinner';
 
-interface Employee {
-  id: string;
-  user: string;
-  email: string;
-  status: string; // novo atributo: "ativado" ou "desativado"
-  imgUrl?: string;
-  token: string;
-}
 
-interface EmployeeListProps {
-  usuario: Employee;
-}
-
-const EmployeeList: React.FC<EmployeeListProps> = ({ usuario }) => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [search, setSearch] = useState('');
-  const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const [employeeToToggle, setEmployeeToToggle] = useState<Employee | null>(null);
-  const token = usuario.token;
-
-  const fetchEmployees = useCallback(async () => {
-    try {
-      const response = await api.get('/employee', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setEmployees(response.data);
-      setFilteredEmployees(response.data);
-    } catch (error) {
-      console.error('Erro ao listar funcionários:', error);
-    }
-  }, [token]);
+// Componente para o Modal de Mudança de Cargo
+const ChangeRoleModal = ({ isOpen, onClose, onConfirm, employee }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (newRole: string) => void;
+  employee: UserProps | null;
+}) => {
+  const [selectedRole, setSelectedRole] = useState(employee?.tipo || '');
 
   useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
-
-  useEffect(() => {
-    if (search.trim() === '') {
-      setFilteredEmployees(employees);
-    } else {
-      const filtered = employees.filter(emp =>
-        emp.user.toLowerCase().includes(search.toLowerCase())
-      );
-      setFilteredEmployees(filtered);
+    if (employee) {
+      setSelectedRole(employee.tipo);
     }
-  }, [search, employees]);
+  }, [employee]);
 
-  const openToggleModal = (employee: Employee) => {
-    setEmployeeToToggle(employee);
-    setShowModal(true);
-  };
+  if (!isOpen || !employee) return null;
 
-  const confirmToggle = async () => {
-    if (!employeeToToggle) return;
-
-    try {
-      await api.put(
-        `/employee/${employeeToToggle.id}/toggle-status`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setShowModal(false);
-      setEmployeeToToggle(null);
-      fetchEmployees();
-    } catch (error) {
-      console.error('Erro ao alterar status do funcionário:', error);
+  // CORRIGIDO: Lógica de validação agora está aqui, no lugar certo.
+  const handleConfirm = () => {
+    // Verificação 1: Garante que um cargo foi selecionado.
+    if (!selectedRole) {
+      toast.error('Por favor, selecione um cargo da lista.');
+      return;
     }
+    // Verificação 2: Garante que o cargo selecionado é diferente do atual.
+    if (selectedRole === employee.tipo) {
+      toast.error('O novo cargo deve ser diferente do atual.');
+      return;
+    }
+    // Se tudo estiver certo, chama a função para salvar.
+    onConfirm(selectedRole);
   };
 
   return (
-    <div className="min-h-full bg-gray-100">
-      {/* Exibe informação do usuário logado */}
-      <div className="p-4 bg-white shadow mb-4">
-        <h2 className="text-4xl text-center font-bold text-gray-800">Lista de Servidores</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+        <div className="p-6">
+          <h3 className="text-xl font-bold text-slate-800">Alterar Cargo</h3>
+          <p className="mt-2 text-sm text-slate-600">
+            Selecione o novo cargo para <strong>{employee.user}</strong>.
+          </p>
+          <div className="mt-4">
+            <label htmlFor="role-select" className="block text-sm font-medium text-slate-700 mb-1">
+              Cargo
+            </label>
+            <input
+              id="role-input"
+              type="text"
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              placeholder="Ex: ADMIN, SECRETARIA"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+        <footer className="px-6 py-4 bg-slate-50 flex justify-end items-center gap-3 rounded-b-xl">
+          <button onClick={onClose} className="text-sm font-semibold text-slate-600 hover:text-slate-900">
+            Cancelar
+          </button>
+          <button onClick={handleConfirm} className="bg-indigo-600 text-white font-bold px-5 py-2 rounded-lg shadow-sm hover:bg-indigo-700">
+            Salvar Alteração
+          </button>
+        </footer>
       </div>
+    </div>
+  );
+};
 
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Campo de pesquisa */}
-        <div className="mb-4">
+
+const EmployeeList = () => {
+  // Ajustado para 'user'
+  const { usuario } = useAuth();
+
+  const {
+    employees,
+    isLoading,
+    error,
+    deleteEmployee,
+    toggleEmployeeStatus,
+    updateRole,
+    fetchEmployees,
+  } = useEmployees(usuario ? usuario.token : '');
+
+  const [search, setSearch] = useState('');
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState<UserProps | null>(null);
+  const [employeeToToggle, setEmployeeToToggle] = useState<UserProps | null>(null);
+  const [employeeToChangeRole, setEmployeeToChangeRole] = useState<UserProps | null>(null);
+
+  const filteredEmployees = useMemo(() => {
+    if (!search) return employees;
+    return employees.filter(emp =>
+      emp.user.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [search, employees]);
+
+  const handleOpenCreateModal = () => setIsFormModalOpen(true);
+
+  const handleSave = async (data: EmployeeFormData) => {
+    const promise = api.post('/employee/create', data, {
+      headers: { Authorization: `Bearer ${usuario ? usuario.token : ''}` }
+    });
+
+    toast.promise(promise, {
+      loading: 'Criando servidor...',
+      success: () => {
+        fetchEmployees();
+        setIsFormModalOpen(false);
+        return 'Servidor criado com sucesso!';
+      },
+      error: 'Erro ao criar servidor.'
+    });
+  };
+
+  const handleDelete = async () => {
+    if (!employeeToDelete) return;
+    const promise = deleteEmployee(employeeToDelete.id);
+    toast.promise(promise, {
+      loading: 'Excluindo...',
+      success: () => {
+        setEmployeeToDelete(null);
+        return 'Servidor excluído com sucesso!';
+      },
+      error: (err) => err.message || 'Ocorreu um erro.',
+    });
+  };
+
+  const handleConfirmToggle = async () => {
+    if (!employeeToToggle) return;
+    const promise = toggleEmployeeStatus(employeeToToggle.id);
+    toast.promise(promise, {
+      loading: 'Alterando status...',
+      success: 'Status alterado com sucesso!',
+      error: (err) => err.message || 'Ocorreu um erro.',
+    });
+    setEmployeeToToggle(null);
+  };
+
+  // CORRIGIDO: Esta função agora tem a responsabilidade certa: chamar a API.
+  const handleConfirmRoleChange = async (newRole: string) => {
+    if (!employeeToChangeRole) return;
+
+    const promise = updateRole(employeeToChangeRole.id, newRole);
+
+    toast.promise(promise, {
+      loading: 'Alterando cargo...',
+      success: () => {
+        setEmployeeToChangeRole(null);
+        return 'Cargo alterado com sucesso!';
+      },
+      error: (err) => err.message || 'Ocorreu um erro ao alterar o cargo.'
+    });
+  };
+
+  return (
+    <div className="min-h-full bg-slate-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-3xl text-center font-bold text-slate-800 mb-6">Gerenciamento de Servidores</h2>
+        <div className="mb-6">
           <input
             type="text"
-            placeholder="Pesquisar servidor..."
+            placeholder="Pesquisar servidor pelo nome..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
-        {filteredEmployees.length > 0 ? (
+        {isLoading && <div className="text-center text-slate-500"><LoadingSpinner /></div>}
+        {error && <div className="text-center text-red-500 p-3 rounded-lg">{error}</div>}
+
+        {!isLoading && !error && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredEmployees.map((employee) => (
-              <div
+              <EmployeeCard
                 key={employee.id}
-                className="bg-white rounded-lg shadow p-6 flex flex-col items-center transition transform hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="mb-4">
-                  {employee.imgUrl ? (
-                    <img
-                      src={employee.imgUrl}
-                      alt={employee.user}
-                      className="w-20 h-20 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center text-2xl">
-                      👤
-                    </div>
-                  )}
-                </div>
-                <h3 className="text-lg font-medium text-gray-900">{employee.user}</h3>
-                <p className="text-sm text-gray-500">{employee.email}</p>
-                <button
-                  onClick={() => openToggleModal(employee)}
-                  className={`mt-2 px-3 w-36 py-1 rounded-full text-sm font-semibold ${
-                    employee.status === 'ativado'
-                      ? 'bg-green-500 hover:bg-green-600'
-                      : 'bg-red-500 hover:bg-red-600'
-                  } text-white focus:outline-none`}
-                >
-                  {employee.status === 'ativado' ? 'Ativado' : 'Desativado'}
-                </button>
-              </div>
+                employee={employee}
+                onToggleStatus={() => setEmployeeToToggle(employee)}
+                onDelete={() => setEmployeeToDelete(employee)}
+                onChangeRole={() => setEmployeeToChangeRole(employee)}
+              />
             ))}
+            <AddEmployeeCard onClick={handleOpenCreateModal} />
           </div>
-        ) : (
-          <div className="text-center text-gray-600">Nenhum servidor encontrado.</div>
         )}
       </div>
 
-      {/* Modal de confirmação */}
-      {showModal && employeeToToggle && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="fixed inset-0 bg-black opacity-50"></div>
-          <div className="bg-white rounded-lg p-6 z-50 max-w-md mx-auto">
-            <p className="mb-4">
-              Realmente deseja alterar o status do servidor <strong>{employeeToToggle.user}</strong>?
-            </p>
-            <div className="flex justify-end space-x-2">
-            <button
-                onClick={() => {
-                  setShowModal(false);
-                  setEmployeeToToggle(null);
-                }}
-                className="px-4 py-2  text-black rounded "
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmToggle}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-              >
-                Confirmar
-              </button>
-             
-            </div>
-          </div>
-        </div>
-      )}
+      <EmployeeModal
+        isOpen={isFormModalOpen}
+        onClose={() => setIsFormModalOpen(false)}
+        onSave={handleSave}
+      />
+
+      <ConfirmationModal
+        isOpen={!!employeeToToggle}
+        onClose={() => setEmployeeToToggle(null)}
+        onConfirm={handleConfirmToggle}
+        title="Alterar Status"
+      >
+        Deseja realmente alterar o status do servidor <strong>{employeeToToggle?.user}</strong>?
+      </ConfirmationModal>
+
+      <ConfirmationModal
+        isOpen={!!employeeToDelete}
+        onClose={() => setEmployeeToDelete(null)}
+        onConfirm={handleDelete}
+        title="Confirmar Exclusão"
+      >
+        Deseja realmente excluir o servidor <strong>{employeeToDelete?.user}</strong>? Esta ação não pode ser desfeita.
+      </ConfirmationModal>
+
+      <ChangeRoleModal
+        isOpen={!!employeeToChangeRole}
+        onClose={() => setEmployeeToChangeRole(null)}
+        onConfirm={handleConfirmRoleChange}
+        employee={employeeToChangeRole}
+      />
     </div>
   );
 };

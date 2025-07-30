@@ -1,46 +1,3 @@
-// import { Link } from 'react-router-dom';
-// import "./ButtonSimple.css"
-
-// interface BSProps {
-//     name: String
-//     type: "submit" | "reset" | "button"
-//     onClick?: () => void;
-// }
-
-// const btnStyle =  "w-40 h-[50px] bg-[#ccc] text-black font-bold"
-
-
-// export const ButtonSimple = ({ name, onClick }: BSProps)  => {
-//     switch (name) {
-//         case 'Cadastrar':
-//             return (
-//                  <Link to="/home">
-//                     <button type="submit" className={btnStyle}>{name}</button>
-//                 </Link>
-//             );
-
-//             case 'Cancelar':
-//                 case 'Sair': {
-//                     return (
-//                         <Link to="/">
-//                             <button type="reset" className={btnStyle}>{name}</button>
-//                         </Link>
-//                     );
-//                 };
-
-//             case 'Novo Pedido': {
-//                 return (
-//                     <button onClick={onClick} className={btnStyle}>
-//                     {name}
-//                     </button>
-//                 );
-//             }
-
-//         default:
-//             return <button className={btnStyle}>{name}</button>;
-//     }
-// }
-
 import { ReactNode } from 'react';
 import { twMerge } from 'tailwind-merge';
 
@@ -68,7 +25,7 @@ export const Button = ({ children, variant, type, size = 'large', className, onC
         <button
             className={twMerge(
                 baseStyles,
-                sizeStyles[size], // Aplica o estilo com base no tamanho
+                sizeStyles[size], 
                 variant === 'solid' ? solidStyles : outlineStyles,
                 className
             )}

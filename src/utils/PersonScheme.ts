@@ -43,7 +43,7 @@ export const PersonScheme = z
       .min(1, { message: "* Telefone é obrigatório." })
       .regex(/^\(\d{2}\) \d{5}-\d{4}$/, { message: "O telefone deve estar no formato (XX) XXXXX-XXXX." })
       .optional(),
-      
+
 
     neighborhood: z
       .string()

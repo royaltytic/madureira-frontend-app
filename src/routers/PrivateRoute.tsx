@@ -1,4 +1,3 @@
-// PrivateRoute.tsx
 import { Route, Navigate } from "react-router-dom";
 
 interface PrivateRouteProps {

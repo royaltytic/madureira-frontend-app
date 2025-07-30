@@ -14,37 +14,17 @@ import {
 import api from "../../services/api";
 import { format, eachMonthOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
+import { useServicosList } from "../../constants/Servicos"; 
+import { LoadingSpinner } from "../loading/LoadingSpinner";
 
-const Spinner: React.FC = () => {
-  return (
-    <div className="flex items-center justify-center h-full">
-      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  );
-};
-
-const SERVICOS = [
-  "Todos",
-  "Água",
-  "Trator",
-  "Semente",
-  "Retroescavadeira",
-  "CAR",
-  "CAF",
-  "RGP",
-  "GTA",
-  "Carta de Anuência Ambiental",
-  "Serviço de Inspeção Municipal",
-  "Declaração de Agricultor/a",
-  "Declaração de Pescador/a",
-  "Caderneta de Pescador/a",
-];
 
 const GraficoTotais: React.FC = () => {
   const [data, setData] = useState<{ name: string; Total: number }[]>([]);
   const [servicoSelecionado, setServicoSelecionado] = useState("Todos");
   const [loading, setLoading] = useState(false);
   const [tipoGrafico, setTipoGrafico] = useState<"linha" | "coluna">("linha");
+
+  const { servicosNomes, isLoading: isLoadingServicos } = useServicosList();
 
   const [periodoInicio, setPeriodoInicio] = useState(() => {
     const today = new Date();
@@ -64,6 +44,7 @@ const GraficoTotais: React.FC = () => {
     };
 
   const fetchData = useCallback(async () => {
+    if(isLoadingServicos) return; // Aguarda o carregamento da lista de serviços
     setLoading(true);
     try {
       const startDate = new Date(periodoInicio);
@@ -82,7 +63,7 @@ const GraficoTotais: React.FC = () => {
         let totalMes = 0;
         if (servicoSelecionado === "Todos") {
           const totalPorServico = await Promise.all(
-            SERVICOS.filter((s) => s !== "Todos").map(async (servico) => {
+            servicosNomes.filter((s) => s !== "Todos").map(async (servico) => {
               const response = await api.get("/orders/filter", {
                 params: { servico, dataInicio, dataFim },
               });
@@ -106,7 +87,7 @@ const GraficoTotais: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [servicoSelecionado, periodoInicio, periodoFim]);
+  }, [servicoSelecionado, periodoInicio, periodoFim, servicosNomes, isLoadingServicos]);
 
   useEffect(() => {
     fetchData();
@@ -160,7 +141,7 @@ const GraficoTotais: React.FC = () => {
             onChange={(e) => setServicoSelecionado(e.target.value)}
             className="w-full p-2 border border-gray-300 font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
-            {SERVICOS.map((servico) => (
+            {servicosNomes.map((servico) => (
               <option key={servico} value={servico}>
                 {servico}
               </option>
@@ -204,7 +185,7 @@ const GraficoTotais: React.FC = () => {
         </div>
       </div>
       <div className="w-full bg-white rounded-lg shadow p-2 h-[300px] md:h-[380px] overflow-hidden">
-        {loading ? <Spinner /> : <ResponsiveContainer>{renderGrafico()}</ResponsiveContainer>}
+        {loading ? <LoadingSpinner /> : <ResponsiveContainer>{renderGrafico()}</ResponsiveContainer>}
       </div>
     </div>
   );

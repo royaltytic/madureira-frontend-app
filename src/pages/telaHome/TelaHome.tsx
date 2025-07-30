@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { PopUp } from "../../components/popup/PopUp";
+import { PopUp } from "../../components/popup/PopUpPedido";
 import UltimosPedidos from "../../components/pedidos/UltimosPedidos";
 import api from "../../services/api";
 import { PopUpEdit } from "./PopUpEdit";
-import { PessoaProps } from "../../types/types";
-import { OrdersProps } from "../../types/types";
-import { UserProps } from "../../types/types";
+import { PessoaProps, OrdersProps } from "../../types/types";
+import { useAuth } from "../../context/AuthContext";
 import Alert from "../../components/alerts/alertDesktop";
+import { AuditInfo } from "./AuditInfo";
 
 import {
   UserCircleIcon,
@@ -27,8 +27,16 @@ import {
   WrenchScrewdriverIcon,
   SquaresPlusIcon,
   TrashIcon,
-  
+
 } from '@heroicons/react/24/solid';
+
+interface AlertState {
+  visible: boolean;
+  text: string;
+  type: 'sucesso' | 'error' | 'info' | 'alerta'; // Adicione outros tipos se necessário
+  onClose?: () => void; // Ação opcional ao fechar
+}
+
 
 interface BeneficioConfig {
   key: keyof PessoaProps; // A chave DEVE ser um nome de propriedade de PessoaProps
@@ -40,7 +48,6 @@ interface BeneficioConfig {
 
 interface HomeProps extends PessoaProps {
   voltarParaPesquisa: () => void;
-  usuario: UserProps;
 }
 
 export const Home: React.FC<HomeProps> = ({
@@ -75,8 +82,11 @@ export const Home: React.FC<HomeProps> = ({
   cafImageUrl,
   carImageUrl,
   rgpImageUrl,
+  createdAt,
+  updatedAt,
+  createdBy,
+  updateBy,
   voltarParaPesquisa,
-  usuario,
 }) => {
   const [userData, setUserData] = useState<PessoaProps>({
     id,
@@ -110,7 +120,13 @@ export const Home: React.FC<HomeProps> = ({
     cafImageUrl: cafImageUrl ?? "",
     carImageUrl: carImageUrl ?? "",
     rgpImageUrl: rgpImageUrl ?? "",
+    createdAt,
+    updatedAt,
+    createdBy,
+    updateBy,
   });
+
+  const { usuario } = useAuth();
 
   const [order, setOrder] = useState<OrdersProps[]>(orders);
   const [isPopUpOpen, setIsPopUpOpen] = useState(false);
@@ -118,10 +134,16 @@ export const Home: React.FC<HomeProps> = ({
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
 
+  const [alertInfo, setAlertInfo] = useState<AlertState>({
+    visible: false,
+    text: '',
+    type: 'info',
+  });
+
   // Função para buscar pedidos atualizados
   const fetchOrders = async () => {
     try {
-      const response = await api.get(`/users/${id}`); // ajuste a rota conforme sua API
+      const response = await api.get(`/users/${id}`);
       setOrder(response.data.orders);
     } catch (error) {
       console.error("Erro ao buscar pedidos:", error);
@@ -134,22 +156,7 @@ export const Home: React.FC<HomeProps> = ({
   },);
 
 
-  // Estado para exibir alerta personalizado
-  const [alert, setAlert] = useState<{
-    type: "alerta" | "error" | "info" | "sucesso";
-    text: string;
-  } | null>(null);
 
-  const showAlert = (
-    type: "alerta" | "error" | "info" | "sucesso",
-    text: string
-  ) => {
-    setAlert({ type, text });
-  };
-
-  const closeAlert = () => {
-    setAlert(null);
-  };
 
   const openPopUp = () => {
     setIsPopUpOpen(true);
@@ -177,27 +184,34 @@ export const Home: React.FC<HomeProps> = ({
     setCurrentImageUrl(null);
   };
 
-  // Adicione esta nova função dentro do seu componente Home
   const handleDeleteUser = async () => {
-    // 1. VERIFICAÇÃO: Checa se o usuário tem pedidos
     if (order && order.length > 0) {
-      showAlert("error", "Não é possível excluir: este usuário possui pedidos registrados.");
+      setAlertInfo({
+        visible: true,
+        text: "Não é possível excluir um usuário com pedidos pendentes.",
+        type: 'error',
+      });
       return;
     }
 
-    // 2. CONFIRMAÇÃO: Pede a confirmação final do usuário
     if (window.confirm(`Tem certeza que deseja excluir permanentemente o usuário ${userData.name}? Esta ação não pode ser desfeita.`)) {
       try {
-        // 3. EXECUÇÃO: Chama a API para deletar o usuário pelo ID
         await api.delete(`/users/${userData.id}`);
-
-        // 4. FEEDBACK E AÇÃO FINAL: Mostra um alerta de sucesso e volta para a tela de pesquisa
-        showAlert("sucesso", "Usuário excluído com sucesso!");
-        voltarParaPesquisa(); // Retorna para a tela anterior
+        setAlertInfo({
+          visible: true,
+          text: "Usuário excluído com sucesso!",
+          type: 'sucesso',
+          onClose: voltarParaPesquisa,
+        });
 
       } catch (error) {
         console.error("Erro ao excluir usuário:", error);
-        showAlert("error", "Ocorreu um erro ao tentar excluir o usuário. Tente novamente.");
+        setAlertInfo({
+          visible: true,
+          text: "Ocorreu um erro ao tentar excluir o usuário. Tente novamente.",
+          type: 'error',
+        });
+
       }
     }
   };
@@ -205,17 +219,22 @@ export const Home: React.FC<HomeProps> = ({
   const salvarPedido = async (novosPedidos: OrdersProps[]) => {
 
     try {
+
+
       const response = await api.put("/users", {
         usuario,
         id,
         orders: novosPedidos,
       });
 
-      // Atualiza o estado local com os pedidos retornados pela API (incluindo o novo pedido)
       setOrder(response.data.orders);
     } catch (error) {
       console.error("Erro ao salvar pedidos:", error);
-      showAlert("error", "Erro ao salvar pedidos. Tente novamente.");
+      setAlertInfo({
+        visible: true,
+        text: "Erro ao salvar pedidos. Tente novamente.",
+        type: 'error',
+      });
     }
   };
 
@@ -228,7 +247,6 @@ export const Home: React.FC<HomeProps> = ({
   ) => {
 
     try {
-      // Se a situação for "Finalizado", utilize a data passada ou, se não houver, a data atual.
       const finalData =
         situacao === "Finalizado" ? dataEntregue || new Date().toISOString() : null;
 
@@ -245,11 +263,20 @@ export const Home: React.FC<HomeProps> = ({
           )
         );
       } else {
-        showAlert("error", "Falha ao atualizar a situação do pedido.");
+        setAlertInfo({
+          visible: true,
+          text: "Falha ao atualizar a situação do pedido.",
+          type: 'error',
+        });
+
       }
     } catch (error) {
       console.error("Erro ao atualizar a situação do pedido:", error);
-      showAlert("error", "Erro ao atualizar a situação do pedido. Tente novamente.");
+      setAlertInfo({
+        visible: true,
+        text: "Erro ao atualizar a situação do pedido. Tente novamente.",
+        type: 'error',
+      });
     }
   };
 
@@ -261,11 +288,13 @@ export const Home: React.FC<HomeProps> = ({
     }));
   };
 
-  const beneficiosConfig: BeneficioConfig[]  = [
+  const beneficiosConfig: BeneficioConfig[] = [
     { key: 'garantiaSafra', label: 'Garantia Safra', icon: <ShieldCheckIcon className="h-4 w-4" />, styles: 'bg-green-100 text-green-800' },
     { key: 'chapeuPalha', label: 'Chapéu de Palha', icon: <SunIcon className="h-4 w-4" />, styles: 'bg-yellow-100 text-yellow-800' },
     { key: 'paa', label: 'PAA', icon: <ShoppingBagIcon className="h-4 w-4" />, styles: 'bg-sky-100 text-sky-800' },
-    { key: 'pnae', label: 'PNAE', icon: <ShoppingBagIcon className="h-4 w-4" />, styles: 'bg-purple-100 text-purple-800' }
+    { key: 'pnae', label: 'PNAE', icon: <ShoppingBagIcon className="h-4 w-4" />, styles: 'bg-purple-100 text-purple-800' },
+    { key: 'adagro', label: 'ADAGRO', icon: <ShoppingBagIcon className="h-4 w-4" />, styles: 'bg-sky-100 text-sky-800' },
+    { key: 'agua', label: 'SSA ÁGUA', icon: <ShoppingBagIcon className="h-4 w-4" />, styles: 'bg-purple-100 text-purple-800' }
   ];
 
   const beneficiosDoUsuario = beneficiosConfig.filter(
@@ -302,45 +331,53 @@ export const Home: React.FC<HomeProps> = ({
               <div className="flex items-center gap-2 text-slate-600"><MapPinIcon className="h-4 w-4 text-slate-400" /><strong>Localidade:</strong> <span>{userData.neighborhood}</span></div>
               <div className="flex items-center gap-2 text-slate-600"><UserGroupIcon className="h-4 w-4 text-slate-400" /><strong>Classe:</strong> <span className="font-medium text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">{Array.isArray(userData.classe) ? userData.classe.join(', ') : userData.classe}</span></div>
             </div>
+            <div>
+            <AuditInfo
+              createdAt={userData.createdAt}
+              createdBy={userData.createdBy}
+              updatedAt={userData.updatedAt}
+              updateBy={userData.updateBy}
+            />
+            </div>
           </div>
 
-         {/* --- CARD DE DOCUMENTOS (DINÂMICO E OTIMIZADO) --- */}
-{(() => {
-  // 1. Define a lista de possíveis documentos
-  const documents = [
-    { label: 'RG', url: userData.rgImageUrl },
-    { label: 'CAF', url: userData.cafImageUrl },
-    { label: 'CAR', url: userData.carImageUrl },
-    { label: 'RGP', url: userData.rgpImageUrl }
-  ];
+          {/* --- CARD DE DOCUMENTOS (DINÂMICO E OTIMIZADO) --- */}
+          {(() => {
+            // 1. Define a lista de possíveis documentos
+            const documents = [
+              { label: 'RG', url: userData.rgImageUrl },
+              { label: 'CAF', url: userData.cafImageUrl },
+              { label: 'CAR', url: userData.carImageUrl },
+              { label: 'RGP', url: userData.rgpImageUrl }
+            ];
 
-  // 2. Filtra apenas os documentos que realmente existem (têm uma URL)
-  const availableDocuments = documents.filter(doc => doc.url);
+            // 2. Filtra apenas os documentos que realmente existem (têm uma URL)
+            const availableDocuments = documents.filter(doc => doc.url);
 
-  // 3. Se não houver nenhum documento disponível, não renderiza nada
-  if (availableDocuments.length === 0) {
-    return null;
-  }
+            // 3. Se não houver nenhum documento disponível, não renderiza nada
+            if (availableDocuments.length === 0) {
+              return null;
+            }
 
-  // 4. Se houver documentos, renderiza o card com os botões
-  return (
-    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-      <h3 className="font-semibold text-slate-800 mb-3">Documentos</h3>
-      <div className="grid grid-cols-2 gap-3">
-        {availableDocuments.map(doc => (
-          <button 
-            key={doc.label} 
-            onClick={() => openImageModal(doc.url!)} // A exclamação (!) garante ao TS que a url existe
-            className="flex items-center justify-center gap-2 text-sm text-slate-700 bg-slate-100 p-2 rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
-          >
-            <DocumentTextIcon className="h-5 w-5 flex-shrink-0" />
-            <span>{doc.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-})()}
+            // 4. Se houver documentos, renderiza o card com os botões
+            return (
+              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 className="font-semibold text-slate-800 mb-3">Documentos</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {availableDocuments.map(doc => (
+                    <button
+                      key={doc.label}
+                      onClick={() => openImageModal(doc.url!)} // A exclamação (!) garante ao TS que a url existe
+                      className="flex items-center justify-center gap-2 text-sm text-slate-700 bg-slate-100 p-2 rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
+                    >
+                      <DocumentTextIcon className="h-5 w-5 flex-shrink-0" />
+                      <span>{doc.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
           {/* --- NOVO CARD: INFORMAÇÕES RURAIS / PESCA (CONDICIONAL) --- */}
           {(userData.classe.includes("Agricultor") || userData.classe.includes("Pescador")) && (
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
@@ -371,29 +408,29 @@ export const Home: React.FC<HomeProps> = ({
 
           {/* --- CARD DE BENEFÍCIOS (CONDICIONAL) --- */}
           {beneficiosDoUsuario.length > 0 && (
-      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-        <h3 className="font-semibold text-slate-800 mb-3">Benefícios Sociais</h3>
-        <div className="flex flex-wrap gap-2">
-          
-        {beneficiosDoUsuario
-  .filter(beneficio => {
-    const valor = userData[beneficio.key];
-    // A condição abaixo remove os itens onde o valor é null, undefined ou "Não"
-    return valor != null && valor !== 'Não';
-  })
-  .map(beneficio => (
-    <span 
-      key={beneficio.key} 
-      className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 ${beneficio.styles}`}
-    >
-      {beneficio.icon}
-      {beneficio.label}
-    </span>
-  ))}
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <h3 className="font-semibold text-slate-800 mb-3">Benefícios Sociais</h3>
+              <div className="flex flex-wrap gap-2">
 
-        </div>
-      </div>
-    )}
+                {beneficiosDoUsuario
+                  .filter(beneficio => {
+                    const valor = userData[beneficio.key];
+                    // A condição abaixo remove os itens onde o valor é null, undefined ou "Não"
+                    return valor != null && valor !== 'Não';
+                  })
+                  .map(beneficio => (
+                    <span
+                      key={beneficio.key}
+                      className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 ${beneficio.styles}`}
+                    >
+                      {beneficio.icon}
+                      {beneficio.label}
+                    </span>
+                  ))}
+
+              </div>
+            </div>
+          )}
 
           {/* --- BOTÕES DE AÇÃO --- */}
           <div className="flex items-center gap-4">
@@ -426,10 +463,8 @@ export const Home: React.FC<HomeProps> = ({
           pedidos={order || []}
           onUpdate={updatePedidoSituacao}
           onEdit={(pedido) => {
-
             console.log("Edit pedido:", pedido);
           }}
-          usuario={usuario}
         />
       </main>
 
@@ -461,6 +496,9 @@ export const Home: React.FC<HomeProps> = ({
           tempo={userData.tempo}
           carroDeMao={userData.carroDeMao}
           produtos={userData.produtos}
+          orders={userData.orders}
+          createdAt={userData.createdAt}
+          updatedAt={userData.updatedAt}
           onClose={closePopUpEdit}
           onUpdate={atualizarDadosUsuario}
         />
@@ -486,8 +524,19 @@ export const Home: React.FC<HomeProps> = ({
         </div>
       )}
 
-      {alert && (
-        <Alert type={alert.type} text={alert.text} onClose={closeAlert} />
+      {alertInfo.visible && (
+        <Alert
+          type={alertInfo.type}
+          text={alertInfo.text}
+          onClose={() => {
+            // Primeiro, executa a ação de onClose, se houver
+            if (alertInfo.onClose) {
+              alertInfo.onClose();
+            }
+            // Depois, esconde o alerta
+            setAlertInfo({ visible: false, text: '', type: 'info' });
+          }}
+        />
       )}
     </section>
   );

@@ -1,110 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import api from "../../services/api";
 import { XMarkIcon } from '@heroicons/react/24/solid';
+import { PessoaProps } from "../../types/types";
+import { BenefitInput } from "../../components/inputs/BenefitInput";
+import { GerenciadorLocalidades } from "../../components/modal/GerenciadorLalidades";
+import Alert from "../../components/alerts/alertDesktop";
+import { useAuth } from "../../context/AuthContext";
 
-
-interface PessoaProps {
-  id: string;
-  name: string;
-  apelido: string;
-  genero: string;
-  cpf: string;
-  rg: string;
-  caf: string;
-  car: string;
-  rgp: string;
-  gta: string;
-  phone: string;
-  neighborhood: string;
-  referencia: string;
-  adagro: string;
-  classe: string[];
-  associacao: string;
-  chapeuPalha: string;
-  garantiaSafra: string;
-  paa: string;
-  pnae: string;
-  agua: string;
-  imposto: string;
-  area: string;
-  tempo: string;
-  carroDeMao: string;
-  produtos: string[];
-}
 
 interface PopUpProps {
   onClose: () => void;
   onUpdate: (updatedData: PessoaProps) => void;
 }
-
-// NOVO COMPONENTE REUTILIZÁVEL PARA BENEFÍCIOS
-interface BenefitInputProps {
-  label: string;
-  name: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}
-
-const BenefitInput: React.FC<BenefitInputProps> = ({ label, name, value, onChange }) => {
-  // Verifica se o benefício está ativo (qualquer valor que não seja "Não")
-  const isActive = value !== 'Não';
-
-  const handleRadioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value === 'sim' ? '' : 'Não'; // Se for 'sim', prepara para digitar o ano. Se 'não', define como "Não".
-    // Simula um evento de input para ser compatível com a função handleInputChange principal
-    onChange({
-      target: { name, value: newValue },
-    } as React.ChangeEvent<HTMLInputElement>);
-  };
-
-  return (
-    <div>
-      <label className="block text-sm font-medium text-slate-600">{label}</label>
-      <div className="mt-1 flex items-center gap-4">
-        {/* Opções Sim/Não */}
-        <div className="flex items-center gap-2">
-          <input
-            type="radio"
-            id={`${name}-sim`}
-            name={`${name}-radio`}
-            value="sim"
-            checked={isActive}
-            onChange={handleRadioChange}
-            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
-          />
-          <label htmlFor={`${name}-sim`} className="text-sm text-slate-800">Sim</label>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="radio"
-            id={`${name}-nao`}
-            name={`${name}-radio`}
-            value="nao"
-            checked={!isActive}
-            onChange={handleRadioChange}
-            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
-          />
-          <label htmlFor={`${name}-nao`} className="text-sm text-slate-800">Não</label>
-        </div>
-
-        {/* Campo de Ano (aparece apenas se "Sim" estiver marcado) */}
-        {isActive && (
-          <input
-            type="text"
-            name={name}
-            value={value} // O valor aqui será o ano
-            onChange={onChange}
-            placeholder="Ano(s). Ex: 2023, 2024"
-            className="flex-grow w-full border-slate-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-
-
 
 export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
   id,
@@ -133,9 +40,15 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
   tempo,
   carroDeMao,
   produtos,
+  orders,
+  createdAt,
+  updatedAt,
   onClose,
   onUpdate,
 }) => {
+
+  const {usuario} = useAuth()
+
   const [formData, setFormData] = useState({
     id,
     cpf,
@@ -163,9 +76,19 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
     tempo,
     carroDeMao,
     produtos,
+    orders,
+    usuarioId: usuario?.id || '',
+    createdAt: createdAt || new Date(),
+    updatedAt: updatedAt || new Date(),
   });
 
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+
+
+
   const handleClassChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
     const { value, checked } = e.target;
     setFormData(prev => {
       // Clona o array de classes atual
@@ -184,23 +107,6 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
     });
   };
 
-  const [apiLocalOptions, setApiLocalOptions] = useState<string[]>([]);
-
-  useEffect(() => {
-    fetchLocalidades();
-  }, []);
-
-  const fetchLocalidades = async () => {
-    try {
-      const response = await api.get("/localidades");
-      const locais = response.data.map(
-        (item: { id: number; localidade: string }) => item.localidade
-      );
-      setApiLocalOptions(locais);
-    } catch (error) {
-      console.error("Erro ao buscar localidades:", error);
-    }
-  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -214,13 +120,27 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
 
 
   const handleSave = async () => {
+
+    setIsLoading(true);
+
     try {
       await api.put(`/users/${formData.id}`, formData);
       onUpdate(formData);
-      onClose();
+      <Alert
+        type="sucesso"
+        text="Cadastro atualizado com sucesso!"
+        onClose={onClose}
+      />
     } catch (error) {
       console.error("Erro ao atualizar os dados:", error);
-      alert("Erro ao atualizar os dados. Tente novamente.");
+      <Alert
+        type="error"
+        text="Erro ao atualizar o cadastro. Tente novamente."
+        onClose={onClose}
+        />
+    } finally {
+      setIsLoading(false);
+      onClose();
     }
   };
 
@@ -246,7 +166,7 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
                 <div><label className="block text-sm font-medium text-slate-600">Apelido</label><input name="apelido" value={formData.apelido} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" /></div>
                 <div><label className="block text-sm font-medium text-slate-600">Gênero</label><select name="genero" value={formData.genero} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"><option value="">Selecione</option><option>Masculino</option><option>Feminino</option><option>Outro</option></select></div>
                 <div><label className="block text-sm font-medium text-slate-600">Telefone</label><input name="phone" value={formData.phone} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" /></div>
-                <div><label className="block text-sm font-medium text-slate-600">CPF</label><input name="cpf" value={formData.cpf} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" disabled /></div>
+                <div><label className="block text-sm font-medium text-slate-600">CPF</label><input name="cpf" value={formData.cpf} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"/></div>
                 <div><label className="block text-sm font-medium text-slate-600">RG</label><input name="rg" value={formData.rg} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" /></div>
 
               </div>
@@ -256,8 +176,17 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
             <fieldset className="p-4 border rounded-lg bg-white">
               <legend className="px-2 font-semibold text-slate-700">Endereço</legend>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                <div><label className="block text-sm font-medium text-slate-600">Localidade</label><select name="neighborhood" value={formData.neighborhood} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">{apiLocalOptions.map(opt => <option key={opt}>{opt}</option>)}</select></div>
-                <div><label className="block text-sm font-medium text-slate-600">Ponto de Referência</label><input name="referencia" value={formData.referencia} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" /></div>
+              <GerenciadorLocalidades
+                  initialValue={formData.neighborhood}
+                  onLocalidadeChange={(novaLocalidade) => 
+                    setFormData(prev => ({ ...prev, neighborhood: novaLocalidade }))
+                  }
+                />
+                
+                <div>
+                    <label className="block text-sm font-medium text-slate-600">Ponto de Referência</label>
+                    <input name="referencia" value={formData.referencia} onChange={handleInputChange} className="mt-1 w-full border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                </div>
               </div>
             </fieldset>
 
@@ -330,8 +259,24 @@ export const PopUpEdit: React.FC<PessoaProps & PopUpProps> = ({
         {/* RODAPÉ FIXO */}
         <div className="flex-shrink-0 p-4 bg-white border-t border-slate-200 flex justify-end items-center gap-4">
           <button onClick={onClose} className="px-6 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 font-semibold hover:bg-slate-50 transition-colors">Cancelar</button>
-          <button onClick={handleSave} className="px-6 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors">Salvar Alterações</button>
-        </div>
+          <button 
+            onClick={handleSave} 
+            disabled={isLoading}
+            className="px-6 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center w-48 disabled:bg-indigo-400 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Salvando...
+              </>
+            ) : (
+              "Salvar Alterações"
+            )}
+          </button>
+          </div>
       </div>
     </div>
   );

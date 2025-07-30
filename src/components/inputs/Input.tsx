@@ -2,8 +2,8 @@ import { twMerge } from "tailwind-merge";
 import { InputType } from "../../enum/input-type";
 import InputMask from "react-input-mask";
 import { FieldErrors, FieldValues, Path, UseFormRegister } from "react-hook-form";
-import arquivo from "../cadastro/assets/archive.png";
 import { useEffect, useState } from "react";
+import { ArchiveBoxArrowDownIcon } from '@heroicons/react/24/outline';
 import { PopUpImage } from "../popup/PopUpImage";
 import api from "../../services/api";
 
@@ -116,9 +116,7 @@ export const Input = <T extends FieldValues>({
       <label className="px-2 text-lg text-black font-bold flex justify-between">
         {label}
         {showFileIcon && (
-          <img
-            src={arquivo}
-            alt="Arquivo"
+          <ArchiveBoxArrowDownIcon
             className="ml-2 w-8 h-8 cursor-pointer"
             onClick={openPopUp}
           />

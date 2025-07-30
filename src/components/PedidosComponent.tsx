@@ -4,12 +4,14 @@ import api from "../services/api";
 import jsPDF from "jspdf";
 import "jspdf-autotable"; // Plugin para criação de tabelas no jsPDF
 import logo from "../assets/logoIcon.png";
-import { PessoaProps, UserProps, OrdersProps } from "../types/types";
+import { PessoaProps, OrdersProps } from "../types/types";
 import BulkFinalizeModal from "./popup/BulkFinalizeModal";
 import Alert from "./alerts/alertDesktop";
 import { MagnifyingGlassIcon, CalendarDaysIcon, ListBulletIcon, ArrowDownTrayIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import autoTable from "jspdf-autotable";
 import { Home } from "../pages/telaHome/TelaHome";
+import { useServicosList } from "../constants/Servicos";
+import { useAuth } from "../context/AuthContext";
 
 declare module "jspdf" {
   interface jsPDF {
@@ -25,11 +27,12 @@ declare module "jspdf" {
   }
 }
 
-interface PedidosComponentProps {
-  usuario: UserProps;
-}
 
-export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) => {
+export const PedidosComponent = () => {
+
+  const {usuario} = useAuth()
+
+  const { servicosNomes } = useServicosList();
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertType, setAlertType] = useState<"alerta" | "error" | "info" | "sucesso">("info");
@@ -70,24 +73,6 @@ export const PedidosComponent: React.FC<PedidosComponentProps> = ({ usuario }) =
 const handleVoltarParaLista = () => {
   setUsuarioSelecionado(null);
 };
-
-
-  const apiServicos = [
-    "Água",
-    "Trator",
-    "Semente",
-    "Retroescavadeira",
-    "CAR",
-    "CAF",
-    "RGP",
-    "GTA",
-    "Mudas",
-    "Carta de Anuência Ambiental",
-    "Serviço de Inspeção Municipal",
-    "Declaração de Agricultor/a",
-    "Declaração de Pescador/a",
-    "Caderneta de Pescador/a",
-  ];
 
   useEffect(() => {
     const fetchLocalidades = async () => {
@@ -393,7 +378,6 @@ const handleVoltarParaLista = () => {
       <Home
         {...usuarioSelecionado}
         voltarParaPesquisa={handleVoltarParaLista}
-        usuario={usuario}
       />
     ) : (
 
@@ -414,7 +398,7 @@ const handleVoltarParaLista = () => {
               <div>
                 <label htmlFor="service-filter" className="block text-sm font-medium text-slate-700 mb-1">Serviço</label>
                 <input type="text" id="service-filter" value={selectedService} onChange={(e) => setSelectedService(e.target.value)} placeholder="Digite ou selecione..." className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" list="service-list" />
-                <datalist id="service-list">{apiServicos.map((s) => (<option key={s} value={s} />))}</datalist>
+                <datalist id="service-list">{servicosNomes.map((s) => (<option key={s} value={s} />))}</datalist>
               </div>
               {/* Filtro de Localidade */}
               <div>
@@ -569,7 +553,6 @@ const handleVoltarParaLista = () => {
           selectedOrders={orders.filter((order) => selectedOrderIds.includes(order.id))}
           onClose={() => setIsBulkFinalizeModalOpen(false)}
           onBulkFinalize={handleBulkFinalize}
-          usuario={usuario}
         />
       )}
       {alertVisible && <Alert type={alertType} text={alertText} onClose={closeAlert} />}

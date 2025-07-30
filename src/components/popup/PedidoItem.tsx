@@ -1,34 +1,25 @@
-import { useState, ReactNode } from "react";
-
-type PedidoItemProps = {
+interface PedidoItemProps {
   name: string;
+  isSelected: boolean;
   onSelect: (selected: boolean) => void;
-  children?: ReactNode; // Permitir filhos (como a textarea)
-};
+  children?: React.ReactNode;
+}
 
-export const PedidoItem = ({ name, onSelect, children }: PedidoItemProps) => {
-  const [isChecked, setIsChecked] = useState(false);
-
-  const handleCheckboxChange = () => {
-    const newCheckedState = !isChecked;
-    setIsChecked(newCheckedState);
-    onSelect(newCheckedState);
-  };
-
-  return (
-    <div className="bg-white h-auto flex flex-col px-4 py-2">
-      <div className="flex items-center gap-4">
-        <input
-          type="checkbox"
-          checked={isChecked}
-          onChange={handleCheckboxChange}
-          className={`w-6 h-6 rounded-full border-2 border-gray-300 
-          appearance-none cursor-pointer 
-          checked:bg-gradient-to-r from-[#0E9647] to-[#165C38] checked:border-[#165C38]`}
-        />
-        <p className="text-color-black font-bold">{name}</p>
+export const PedidoItem: React.FC<PedidoItemProps> = ({ name, isSelected, onSelect, children }) => (
+  <div className={`p-4 border rounded-lg transition-all duration-200 ${isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
+    <label className="flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        checked={isSelected}
+        onChange={(e) => onSelect(e.target.checked)}
+        className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+      />
+      <span className={`ml-3 font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>{name}</span>
+    </label>
+    {isSelected && (
+      <div className="mt-3 pl-8">
+        {children}
       </div>
-      {isChecked && children}
-    </div>
-  );
-};
+    )}
+  </div>
+);

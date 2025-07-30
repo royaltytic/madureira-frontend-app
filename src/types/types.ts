@@ -9,117 +9,121 @@ export interface OrdersProps {
   employeeId: string;
   entreguePorId: string;
   imageUrl: string;
-  }
-  
+}
 
-  export interface PessoaProps {
+interface EmployeeInfo {
+  id: string;
+  user: string; // Nome do funcionário
+}
 
-    // dados gerais e comuns a todos os tipos de usuários. os Outros e Repartição Pública contem aenas esses também.
+// Pessoa que fazem cadastro 
 
-    id: string;
+export interface PessoaProps {
 
-    name: string;
-  
-    apelido: string;
+  // dados gerais e comuns a todos os tipos de usuários. os Outros e Repartição Pública contem aenas esses também.
 
-    genero: string;
-  
-    cpf: string;
-  
-    rg: string;
+  id: string;
 
-    rgImageUrl?: string;
+  name: string;
 
-    phone: string;
+  apelido: string;
 
-    neighborhood: string;
-  
-    referencia: string;
+  genero: string;
 
-    classe: string[];
+  cpf: string;
 
-    associacao: string;
+  rg: string;
 
-    orders: OrdersProps[];
+  rgImageUrl?: string;
 
-    // Agricultores e/ou Pescadores
-  
-    caf: string;
+  phone: string;
 
-    cafImageUrl?: string;
-  
-    car: string;
+  neighborhood: string;
 
-    carImageUrl?: string;
-  
-    rgp: string;
+  referencia: string;
 
-    rgpImageUrl?: string;
-  
-    gta: string;
-  
-    adagro: string;
-  
-    chapeuPalha: string;
-  
-    garantiaSafra: string;
-  
-    paa: string;
-  
-    pnae: string;
-  
-    agua: string;
+  classe: string[];
 
-    // Feirantes
-  
-    imposto: string;
-  
-    area: string;
-  
-    tempo: string;
-  
-    carroDeMao: string;
-  
-    produtos: string[];
-  
-    
+  associacao: string;
 
-  
-  }
-  
+  orders: OrdersProps[];
+
+  // Agricultores e/ou Pescadores
+
+  caf: string;
+
+  cafImageUrl?: string;
+
+  car: string;
+
+  carImageUrl?: string;
+
+  rgp: string;
+
+  rgpImageUrl?: string;
+
+  gta: string;
+
+  adagro: string;
+
+  chapeuPalha: string;
+
+  garantiaSafra: string;
+
+  paa: string;
+
+  pnae: string;
+
+  agua: string;
+
+  // Feirantes
+
+  imposto: string;
+
+  area: string;
+
+  tempo: string;
+
+  carroDeMao: string;
+
+  produtos: string[];
+
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy?: EmployeeInfo;
+  updateBy?: EmployeeInfo;
+
+}
+
+// servidores
 
 export interface UserProps {
-
-  employee : {
   user: string;
   id: string
   imgUrl: string;
   email: string;
+  status: string;
   tipo: string;
   birthDate: Date;
+  lastLogin?: string | null;
   orders: OrdersProps[];
   ordersEntregues: OrdersProps[];
-  },
+
   token: string;
-  
+
 }
 
 
-export interface UserPropsConfig {
-
-  user: string;
-  id: string
-  imgUrl: string;
-  email: string;
-  tipo: string;
-  birthDate: Date;
-  orders: OrdersProps[];
-  ordersEntregues: OrdersProps[];
-}
-  
 
 export interface DeliveryProps {
   idDelivery: string;
   name: string;
   tipo?: string;
+}
+
+// pessoa para fins rapidos
+export interface Pessoa {
+  id: string;
+  name: string;
+  cpf?: string;
 }

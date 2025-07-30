@@ -10,22 +10,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import api from "../../services/api";
+import { useServicosList} from "../../constants/Servicos"; // Certifique-se de que este caminho esteja correto
 
-const SERVICES = [
-  "Água",
-  "Trator",
-  "Semente",
-  "Retroescavadeira",
-  "CAR",
-  "CAF",
-  "RGP",
-  "GTA",
-  "Carta de Anuência Ambiental",
-  "Serviço de Inspeção Municipal",
-  "Declaração de Agricultor/a",
-  "Declaração de Pescador/a",
-  "Caderneta de Pescador/a",
-];
 
 const GraficoPedidosAnoPorServico: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -33,6 +19,10 @@ const GraficoPedidosAnoPorServico: React.FC = () => {
   const [endYear, setEndYear] = useState<number>(currentYear);
   const [data, setData] = useState<Array<Record<string, number | string>>>([]);
   const [loading, setLoading] = useState<boolean>(false);
+
+
+  const { servicosNomes } = useServicosList();
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,7 +38,7 @@ const GraficoPedidosAnoPorServico: React.FC = () => {
         for (const year of years) {
           const yearData: Record<string, number | string> = { year };
 
-          for (const service of SERVICES) {
+          for (const service of servicosNomes ) {
             // Define o intervalo do ano: de 1º de janeiro a 31 de dezembro
             const startDate = new Date(year, 0, 1);
             const endDate = new Date(year, 11, 31);
@@ -77,7 +67,7 @@ const GraficoPedidosAnoPorServico: React.FC = () => {
     };
 
     fetchData();
-  }, [startYear, endYear]);
+  }, [startYear, endYear, servicosNomes]);
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md w-full mx-auto">
@@ -121,7 +111,7 @@ const GraficoPedidosAnoPorServico: React.FC = () => {
             <YAxis />
             <Tooltip />
             <Legend />
-            {SERVICES.map((service, index) => (
+            {servicosNomes.map((service, index) => (
               <Bar key={service} dataKey={service} name={service} fill={`hsl(${index * 30}, 70%, 50%)`} />
             ))}
           </BarChart>
