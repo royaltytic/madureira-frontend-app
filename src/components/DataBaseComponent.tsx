@@ -184,7 +184,7 @@ export const DatabaseComponent = () => {
           <input type="text" placeholder="Buscar por nome..." value={filters.name} onChange={(e) => handleFilterChange('name', e.target.value)} className="lg:col-span-2 w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           <InputMask mask="999.999.999-99" placeholder="Buscar por CPF..." value={filters.cpf} onChange={(e) => handleFilterChange('cpf', e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           <select value={filters.classe} onChange={(e) => handleFilterChange('classe', e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="">Todas as Classes</option><option value="Agricultor">Agricultor</option><option value="Pescador">Pescador</option><option value="Feirante">Feirante</option>
+            <option value="">Todas as Classes</option><option value="Agricultor">Agricultor</option><option value="Pescador">Pescador</option><option value="Feirante">Feirante</option><option value="Pecuarista">Pecuarista</option>
           </select>
           {/* Botão para abrir o Modal */}
           <button onClick={() => setIsModalOpen(true)} className="flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 transition-colors">

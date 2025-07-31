@@ -3,10 +3,14 @@ import { InputType } from "../../enum/input-type";
 import InputMask from "react-input-mask";
 import { FieldErrors, FieldValues, Path, UseFormRegister } from "react-hook-form";
 import { useEffect, useState } from "react";
-import { ArchiveBoxArrowDownIcon } from '@heroicons/react/24/outline';
+import { ArrowUpTrayIcon, BuildingLibraryIcon, DevicePhoneMobileIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { PopUpImage } from "../popup/PopUpImage";
 import api from "../../services/api";
 
+// Enum para os tipos de input (simulando o que viria de "../../enum/input-type")
+
+
+// Props do componente
 interface InputProps<T extends FieldValues> {
   type: InputType;
   placeholder?: string;
@@ -22,6 +26,7 @@ interface InputProps<T extends FieldValues> {
   onFileUpload?: (file: File) => void;
 }
 
+// Componente principal
 export const Input = <T extends FieldValues>({
   type,
   placeholder,
@@ -39,22 +44,25 @@ export const Input = <T extends FieldValues>({
   const [isLocalPopupVisible, setIsLocalPopupVisible] = useState(false);
   const [newLocalValue, setNewLocalValue] = useState("");
 
+  // Busca as localidades da API ao montar o componente
   useEffect(() => {
+    const fetchLocalidades = async () => {
+      try {
+        
+        const response = await api.get("/localidades");
+        const locais = response.data.map(
+          (item: { id: number; localidade: string }) => item.localidade
+        );
+        
+        setLocalOptions(locais);
+      } catch (error) {
+        console.error("Erro ao buscar localidades:", error);
+      }
+    };
     fetchLocalidades();
   }, []);
 
-  const fetchLocalidades = async () => {
-    try {
-      const response = await api.get("/localidades");
-      const locais = response.data.map(
-        (item: { id: number; localidade: string }) => item.localidade
-      );
-      setLocalOptions(locais);
-    } catch (error) {
-      console.error("Erro ao buscar localidades:", error);
-    }
-  };
-
+  // Define a máscara com base no tipo de input
   const getMask = (inputType: string) => {
     switch (inputType) {
       case InputType.CPF:
@@ -62,15 +70,17 @@ export const Input = <T extends FieldValues>({
       case InputType.Phone:
         return "(99) 99999-9999";
       default:
-        return null;
+        return "";
     }
   };
   const mask = getMask(type);
 
+  // Verifica se o ícone de upload de arquivo deve ser exibido
   const showFileIcon = ["rg", "caf", "car", "rgp"].includes(
     String(name).toLowerCase()
   );
 
+  // Funções para controlar o pop-up de upload
   const openPopUp = () => setIsPopUpVisible(true);
   const closePopUp = () => setIsPopUpVisible(false);
   const handleImageUpload = (file: File) => {
@@ -79,31 +89,31 @@ export const Input = <T extends FieldValues>({
     closePopUp();
   };
 
+  // Função para adicionar uma nova localidade
   const handleAddLocal = async (e: React.FormEvent) => {
-    e.preventDefault(); // Evita o comportamento padrão do form, que pode causar recarregamento da página
-
+    e.preventDefault();
     if (!newLocalValue.trim()) return;
     try {
+      // Simulação de chamada de API
       const response = await api.post("/localidades", {
         localidade: newLocalValue,
       });
-
       const novaLocalidade = response.data.localidade;
+      
       setLocalOptions((prev) => [...prev, novaLocalidade]);
-
-      // Atualiza o campo do formulário para manter a seleção
       formOnChange({ target: { value: novaLocalidade } });
-
       setIsLocalPopupVisible(false);
-      setNewLocalValue(""); // Reseta apenas o estado interno do input
+      setNewLocalValue("");
     } catch (error) {
       console.error("Erro ao adicionar localidade:", error);
     }
   };
 
+  // Registra o campo no React Hook Form
   const localRegister = register(name);
   const { onChange: formOnChange, ...restRegister } = localRegister;
 
+  // Controla a exibição do pop-up de "Outros"
   const handleLocalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     formOnChange(e);
     if (e.target.value === "Outros") {
@@ -111,80 +121,106 @@ export const Input = <T extends FieldValues>({
     }
   };
 
+  // Estilos base para os inputs
+  const baseInputStyle = "w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-all duration-300";
+  const errorInputStyle = "border-red-500 focus:ring-red-500 focus:border-red-500";
+  const inputWithIconStyle = "pl-4";
+
+  // Ícone para cada tipo de input
+  const getInputIcon = (inputType: InputType) => {
+    const iconStyle = "absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500";
+    switch (inputType) {
+      case InputType.CPF:
+        return <UserCircleIcon className={iconStyle} width={20} />;
+      case InputType.Phone:
+        return <DevicePhoneMobileIcon className={iconStyle} width={20} />;
+      case InputType.Local:
+        return <BuildingLibraryIcon className={iconStyle} width={20} />;
+      default:
+        return null;
+    }
+  }
+
+  // Renderização do componente
   return (
-    <div className="w-full flex flex-col gap-2">
-      <label className="px-2 text-lg text-black font-bold flex justify-between">
+    <div className="w-full flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-gray-700 flex justify-between items-center">
         {label}
         {showFileIcon && (
-          <ArchiveBoxArrowDownIcon
-            className="ml-2 w-8 h-8 cursor-pointer"
-            onClick={openPopUp}
-          />
+          <button type="button" onClick={openPopUp} className="p-1.5 rounded-full hover:bg-gray-200 transition-colors duration-200">
+            <ArrowUpTrayIcon className="w-6 h-6 text-gray-600" />
+          </button>
         )}
       </label>
 
-      {type === InputType.Local ? (
-        <select
-          className={twMerge(
-            "border-b lg:border-2 shadow-2xl border-black lg:rounded-lg px-4 py-2 w-full bg-transparent focus:outline-none lg:focus:border-2 focus:border-black appearance-none relative custom-select-black",
-            error[name] ? "border-red-500" : ""
-          )}
-          {...restRegister}
-          onChange={handleLocalChange}
-        >
-          <option value="">Selecione o Local</option>
-          {localOptions.map((local) => (
-            <option key={local} value={local}>
-              {local}
-            </option>
-          ))}
-          <option value="Outros">Outros</option>
-        </select>
-      ) : type === InputType.Radio && options ? (
-        <div className="flex gap-4">
-          {options.map((option) => (
-            <label key={option} className="flex items-center ml-2">
-              <input
-                type="radio"
-                value={option}
-                className="mr-1 mb-0.5"
-                {...register(name)}
-              />
-              {option}
-            </label>
-          ))}
-        </div>
-      ) : mask ? (
-        <InputMask
-          mask={mask}
-          placeholder={placeholder}
-          type={type}
-          className={twMerge(
-            "border-b lg:border-2 shadow-2xl border-black lg:rounded-lg px-4 py-2 w-full focus:outline-none lg:focus:border-2",
-            error[name] ? "border-red-500" : "focus:border-black"
-          )}
-          {...register(name)}
-        />
-      ) : (
-        <input
-          type={type}
-          placeholder={placeholder}
-          list={list}
-          className={twMerge(
-            "border-b lg:border-2 shadow-2xl border-black lg:rounded-lg px-4 py-2 w-full focus:outline-none lg:focus:border-2",
-            error[name] ? "border-red-500" : "focus:border-black"
-          )}
-          {...register(name)}
-        />
-      )}
+      <div className="relative">
+        {getInputIcon(type)}
+        {type === InputType.Local ? (
+          <select
+            className={twMerge(
+              baseInputStyle,
+              inputWithIconStyle,
+              error[name] ? errorInputStyle : ""
+            )}
+            {...restRegister}
+            onChange={handleLocalChange}
+          >
+            <option value="">Selecione o Local</option>
+            {localOptions.map((local) => (
+              <option key={local} value={local}>
+                {local}
+              </option>
+            ))}
+            <option value="Outros">Outros...</option>
+          </select>
+        ) : type === InputType.Radio && options ? (
+          <div className="flex items-center gap-4 pt-2">
+            {options.map((option) => (
+              <label key={option} className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  value={option}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2"
+                  {...register(name)}
+                />
+                {option}
+              </label>
+            ))}
+          </div>
+        ) : mask ? (
+          <InputMask
+            mask={mask}
+            placeholder={placeholder}
+            type={type}
+            className={twMerge(
+              baseInputStyle,
+              inputWithIconStyle,
+              error[name] ? errorInputStyle : ""
+            )}
+            {...register(name)}
+          />
+        ) : (
+          <input
+            type={type}
+            placeholder={placeholder}
+            list={list}
+            className={twMerge(
+              baseInputStyle,
+              getInputIcon(type) ? inputWithIconStyle : "",
+              error[name] ? errorInputStyle : ""
+            )}
+            {...register(name)}
+          />
+        )}
+      </div>
 
       {uploadedFileName && (
-        <span className="text-sm text-green-500 font-bold ml-4">
+        <span className="text-xs text-green-600 font-medium ml-1">
           Arquivo enviado: {uploadedFileName}
         </span>
       )}
       {error[name] && (
-        <span className="text-sm text-red-500 font-bold ml-4">
+        <span className="text-xs text-red-600 font-medium ml-1">
           {(error[name]?.message as string) || ""}
         </span>
       )}
@@ -197,36 +233,56 @@ export const Input = <T extends FieldValues>({
       )}
 
       {isLocalPopupVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-4 rounded-lg w-80">
-            <h3 className="text-lg font-bold mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
               Adicionar nova localidade
             </h3>
-            <input
-              type="text"
-              placeholder="Digite a nova localidade"
-              value={newLocalValue}
-              onChange={(e) => setNewLocalValue(e.target.value)}
-              className="border p-2 w-full mb-4"
-            />
-            <div className="flex justify-end gap-2">
-            <button
-                onClick={() => setIsLocalPopupVisible(false)}
-                className=" text-black px-4 py-2 rounded"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleAddLocal}
-                className="bg-gradient-to-r from-[#0E9647] to-[#165C38] text-white px-4 py-2 rounded"
-              >
-                Adicionar
-              </button>
-             
-            </div>
+            <form onSubmit={handleAddLocal}>
+              <input
+                type="text"
+                placeholder="Digite o nome da localidade"
+                value={newLocalValue}
+                onChange={(e) => setNewLocalValue(e.target.value)}
+                className={twMerge(baseInputStyle, "mb-4")}
+                autoFocus
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsLocalPopupVisible(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Adicionar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
     </div>
   );
 };
+
+// Adicione estas animações no seu arquivo CSS global ou no <style> do seu componente principal
+/*
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.3s ease-out forwards;
+}
+*/

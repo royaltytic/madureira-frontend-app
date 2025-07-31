@@ -2,7 +2,7 @@ import { useState, FormEvent } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 
-import Logo from "./assets/logo_nova.png";
+import Logo from "./assets/Logo.png";
 import fundo from "./assets/fundo.jpeg";
 import { EyeIcon, EyeSlashIcon, EnvelopeIcon, CalendarDaysIcon, ArrowLeftIcon } from "@heroicons/react/24/solid";
 

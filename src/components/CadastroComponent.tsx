@@ -3,13 +3,16 @@ import { useForm, UseFormReturn, Path, UseFormRegister } from "react-hook-form";
 import { FormPerson } from "../types/FormPerson";
 import { PersonScheme } from "../utils/PersonScheme";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "./inputs/Input"; // Assumindo que seu Input foi adaptado
+import { Input } from "./inputs/Input";
 import { InputType } from "../enum/input-type";
 import api from "../services/api";
-import Alert from "./alerts/alertDesktop"; // Assumindo que seu Alert foi adaptado
+import Alert from "./alerts/alertDesktop";
 import { useState, ComponentProps } from "react";
 import { useAuth } from "../context/AuthContext";
-import { ChevronRight, ArrowLeft, Check, X, UserPlus, Loader2, FileText, User, MapPin } from 'lucide-react'; // Ícones modernos
+import { ChevronRight, ArrowLeft, Check, X, UserPlus, Loader2, FileText, User, MapPin, Download } from 'lucide-react'; // Ícones modernos
+import jsPDF from 'jspdf'; // Importa a biblioteca jsPDF
+import 'jspdf-autotable'; // Para tabelas e layouts mais avançados (opcional, mas útil)
+
 
 // --- Componentes de UI Reutilizáveis e Aprimorados ---
 
@@ -92,8 +95,9 @@ interface StepProps {
     isLoading: boolean;
 }
 
-const CadastroStep1 = ({ form, onFileUpload, onNext, onCancel, isLoading }: StepProps & { onNext: () => void; onCancel: () => void; }) => {
+const CadastroStep1 = ({ form, onFileUpload, onNext, onCancel, isLoading, onDownloadPDF, selectedClasses }: StepProps & { onNext: () => void; onCancel: () => void; onDownloadPDF: () => void; selectedClasses: string[] }) => {
     const { register, formState: { errors } } = form;
+    const shouldShowFinalButtons = selectedClasses.length > 0 && selectedClasses.every(c => ["Outros", "Repartição Pública"].includes(c));
 
     return (
         <div className="space-y-8">
@@ -132,19 +136,30 @@ const CadastroStep1 = ({ form, onFileUpload, onNext, onCancel, isLoading }: Step
                  {errors.classe && <p className="text-red-500 text-sm mt-4 lg:col-span-3">{errors.classe.message}</p>}
             </FormSection>
 
-            <div className="flex justify-end items-center gap-6 pt-4">
+            <div className="flex justify-end items-center gap-4 pt-6 border-t border-gray-200">
                 <ModernButton type="button" onClick={onCancel} className="bg-gray-600 hover:bg-gray-700 focus:ring-gray-500">
                     <X size={20} /> Cancelar
                 </ModernButton>
+
+                {shouldShowFinalButtons && (
+                    <ModernButton type="button" onClick={onDownloadPDF} className="bg-green-600 hover:bg-green-700 focus:ring-green-500">
+                        <Download size={20} /> Baixar PDF
+                    </ModernButton>
+                )}
+
                 <ModernButton type="button" onClick={onNext} isLoading={isLoading} className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500">
-                    Avançar <ChevronRight size={20} />
+                    {shouldShowFinalButtons ? (
+                        <><UserPlus size={20} /> Cadastrar</>
+                    ) : (
+                        <>Avançar <ChevronRight size={20} /></>
+                    )}
                 </ModernButton>
             </div>
         </div>
     );
 };
 
-const CadastroStep2 = ({ form, onFileUpload, onBack, isLoading }: StepProps & { onBack: () => void; }) => {
+const CadastroStep2 = ({ form, onFileUpload, onBack, isLoading, onDownloadPDF }: StepProps & { onBack: () => void; onDownloadPDF: () => void; }) => {
     const { register, formState: { errors }, watch } = form;
     const selectedClasses = watch("classe") || [];
     
@@ -211,12 +226,15 @@ const CadastroStep2 = ({ form, onFileUpload, onBack, isLoading }: StepProps & { 
                 </>
             )}
 
-            <div className="flex justify-end items-center gap-6 pt-4">
-                <ModernButton type="button" onClick={onBack} className="bg-gray-600 hover:bg-gray-700 focus:ring-gray-500">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-gray-200">
+                <ModernButton type="button" onClick={onBack} className="bg-gray-600 hover:bg-gray-700 focus:ring-gray-500 md:col-span-1">
                     <ArrowLeft size={20} /> Voltar
                 </ModernButton>
-                <ModernButton type="submit" isLoading={isLoading} className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500">
-                    <UserPlus size={20} /> Cadastrar Usuário
+                <ModernButton type="button" onClick={onDownloadPDF} className="bg-green-600 hover:bg-green-700 focus:ring-green-500 md:col-span-1">
+                    <Download size={20} /> Baixar PDF
+                </ModernButton>
+                <ModernButton type="submit" isLoading={isLoading} className="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 md:col-span-1">
+                    <UserPlus size={20} /> Cadastrar
                 </ModernButton>
             </div>
         </div>
@@ -231,7 +249,7 @@ export const CadastroComponent = () => {
         resolver: zodResolver(PersonScheme),
         mode: "onBlur"
     });
-    const { handleSubmit, reset, watch, trigger } = form;
+    const { handleSubmit, reset, watch, trigger, getValues } = form;
     
     const { usuario } = useAuth();
     const [alertVisible, setAlertVisible] = useState(false);
@@ -275,7 +293,7 @@ export const CadastroComponent = () => {
             return;
         }
         
-        const shouldSubmitDirectly = selectedClasses.includes("Outros") || selectedClasses.includes("Repartição Pública");
+        const shouldSubmitDirectly = selectedClasses.length > 0 && selectedClasses.every(c => ["Outros", "Repartição Pública"].includes(c));
 
         if (shouldSubmitDirectly) {
             handleSubmit(onSubmit)();
@@ -285,6 +303,126 @@ export const CadastroComponent = () => {
     };
 
     const voltar = () => setStep(1);
+
+    const handleDownloadPDF = () => {
+        const data = getValues();
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        let y = 0;
+    
+        // --- Cabeçalho do PDF ---
+        doc.setFillColor(76, 81, 191); // Cor índigo
+        doc.rect(0, 0, pageWidth, 25, 'F');
+        doc.setFontSize(20);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Ficha de Cadastro", pageWidth / 2, 16, { align: 'center' });
+        y = 35;
+    
+        // --- Função Auxiliar para Seções ---
+        const addSection = (title: string, content: { label: string; value?: string | number | readonly string[] | null }[]) => {
+            if (y > pageHeight - 40) { // Adiciona nova página se necessário
+                doc.addPage();
+                y = 20;
+            }
+            doc.setFontSize(15);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(67, 56, 202); // Cor índigo mais escura para títulos de seção
+            doc.text(title, 14, y);
+            doc.setDrawColor(209, 213, 219); // Cinza para a linha
+            doc.line(14, y + 2, pageWidth - 14, y + 2);
+            y += 12;
+    
+            content.forEach(item => {
+                if (item.value && item.value.toString().trim() !== "") {
+                    if (y > pageHeight - 20) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    doc.setFontSize(11);
+                    doc.setTextColor(31, 41, 55); // Cinza escuro para o texto
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`${item.label}:`, 16, y);
+                    
+                    doc.setFont('helvetica', 'normal');
+                    const valueX = 16 + doc.getTextWidth(`${item.label}: `) + 2;
+                    const valueLines = doc.splitTextToSize(item.value.toString(), pageWidth - valueX - 16);
+                    doc.text(valueLines, valueX, y);
+                    y += (valueLines.length * 5) + 3;
+                }
+            });
+            y += 5;
+        };
+    
+        // --- Adicionando Conteúdo ao PDF ---
+        addSection("Informações Pessoais", [
+            { label: "Nome Completo", value: data.name },
+            { label: "Apelido", value: data.apelido },
+            { label: "CPF", value: data.cpf },
+            { label: "RG", value: data.rg },
+            { label: "Gênero", value: data.genero },
+        ]);
+    
+        addSection("Contato e Localização", [
+            { label: "Telefone", value: data.phone },
+            { label: "Associação", value: data.associacao },
+            { label: "Localidade", value: data.neighborhood },
+            { label: "Referência", value: data.referencia },
+        ]);
+    
+        addSection("Classe Profissional", [
+            { label: "Classes", value: data.classe?.join(', ') },
+        ]);
+    
+        if (data.classe?.includes("Feirante")) {
+            addSection("Informações de Feirante", [
+                { label: "Imposto", value: data.imposto ? `R$ ${data.imposto}` : 'Não informado' },
+                { label: "Área de Venda", value: data.area },
+                { label: "Tempo como Feirante", value: data.tempo },
+                { label: "Produtos", value: data.produtos },
+                { label: "Usa Carrinho de Mão", value: data.carroDeMao },
+            ]);
+        }
+        
+        if (data.classe?.some(c => ["Agricultor", "Pescador", "Pecuarista"].includes(c))) {
+             addSection("Documentos Adicionais", [
+                { label: "RGP", value: data.rgp }, { label: "GTA", value: data.gta },
+                { label: "CAF", value: data.caf }, { label: "CAR", value: data.car },
+            ]);
+            
+            addSection("Programas e Benefícios", [
+                 { label: "CAD ADAGRO", value: data.adagroOption === "Sim" ? `Sim (${data.adagro || 'N/A'})` : "Não" },
+                 { label: "Garantia Safra", value: data.garantiaSafraOption === "Sim" ? `Sim (${data.garantiaSafra || 'N/A'})` : "Não" },
+                 { label: "Chapéu de Palha", value: data.chapeuPalhaOption === "Sim" ? `Sim (${data.chapeuPalha || 'N/A'})` : "Não" },
+                 { label: "PAA", value: data.paaOption === "Sim" ? `Sim (${data.paa || 'N/A'})` : "Não" },
+                 { label: "PNAE", value: data.pnaeOption === "Sim" ? `Sim (${data.pnae || 'N/A'})` : "Não" },
+                 { label: "SSA ÁGUA", value: data.aguaOption === "Sim" ? `Sim (${data.agua || 'N/A'})` : "Não" },
+            ]);
+        }
+    
+        // --- Área da Assinatura ---
+        y = y > pageHeight - 50 ? (doc.addPage(), 40) : y + 20;
+        const signatureX = pageWidth / 2;
+        doc.setDrawColor(107, 114, 128);
+        doc.line(signatureX - 50, y, signatureX + 50, y);
+        doc.setFontSize(10);
+        doc.setTextColor(107, 114, 128);
+        doc.text(data.name || "Assinatura do Usuário", signatureX, y + 7, { align: 'center' });
+    
+        // --- Rodapé ---
+        const pageCount = doc.internal.pages[0];
+        for(let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(156, 163, 175);
+            const today = new Date().toLocaleDateString('pt-BR');
+            doc.text(`Documento gerado em ${today}`, 14, pageHeight - 10);
+            doc.text(`Página ${i} de ${pageCount}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
+        }
+    
+        doc.save(`ficha_cadastro_${data.name?.replace(/\s+/g, '_').toLowerCase() || 'usuario'}.pdf`);
+    };
 
     const onSubmit = async (data: FormPerson) => {
         setIsLoading(true);
@@ -304,7 +442,6 @@ export const CadastroComponent = () => {
             const response = await api.post("/users", payload);
             if (response.status === 201) {
                 const userId = response.data.id;
-                // Upload de arquivos em paralelo para melhor performance
                 const uploadPromises = Object.entries(imageFiles).map(([field, file]) => {
                     const formData = new FormData();
                     formData.append("file", file);
@@ -351,6 +488,8 @@ export const CadastroComponent = () => {
                             onNext={nextStep}
                             onCancel={cancelar}
                             isLoading={isLoading}
+                            onDownloadPDF={handleDownloadPDF}
+                            selectedClasses={selectedClasses}
                         />
                     )}
                     {step === 2 && (
@@ -359,6 +498,7 @@ export const CadastroComponent = () => {
                             onFileUpload={handleFileUploadForField}
                             onBack={voltar}
                             isLoading={isLoading}
+                            onDownloadPDF={handleDownloadPDF}
                         />
                     )}
                 </form>
