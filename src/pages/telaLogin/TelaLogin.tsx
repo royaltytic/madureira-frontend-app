@@ -4,7 +4,7 @@ import { useState, FormEvent } from 'react';
 import { useAuth } from '../../context/AuthContext'; // 2. Importar o hook de autenticação
 import { toast } from 'react-hot-toast'; // Para um feedback mais moderno
 
-import Logo from "./assets/logo_nova.png";
+import Logo from "./assets/Logo.png";
 import fundo from "./assets/fundo.jpeg";
 import { EyeIcon, EyeSlashIcon, UserIcon } from "@heroicons/react/24/solid";
 
