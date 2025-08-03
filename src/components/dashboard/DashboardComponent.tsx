@@ -116,7 +116,7 @@ const ModalPessoas: React.FC<ModalProps> = ({ isOpen, onClose, title, people, is
                             {people.map(person => {
                                 // CORREÇÃO: Acessar os dados diretamente do objeto 'person'.
                                 // A estrutura de dados da API não possui um objeto 'user' aninhado.
-                                const nome = person.name;
+                                const nome = person.name || person.user.name;
                                 const cpf = person.cpf;
                                 const inicial = nome ? nome.charAt(0).toUpperCase() : '?';
 
@@ -512,22 +512,11 @@ export default function DashboardComponent() {
             return <div className="min-h-[60vh] flex items-center justify-center"><LoadingSpinner /></div>;
         }
 
-        // CORREÇÃO: Formata o período para o formato de string esperado pelo DashboardOperacional.
-        const getPeriodForOperacional = (): string => {
-            if (typeof selectedPeriod === 'string') {
-                return selectedPeriod;
-            }
-            if (selectedPeriod?.from) {
-                const start = format(selectedPeriod.from, 'yyyy-MM-dd');
-                const end = selectedPeriod.to ? format(selectedPeriod.to, 'yyyy-MM-dd') : start;
-                return `daterange:${start}_${end}`;
-            }
-            return 'this_month'; // Fallback para um valor padrão
-        };
+       
         
         switch(abaSelecionada) {
             case 'pedidos':
-                return <DashboardOperacional service={selectedService} period={getPeriodForOperacional()} />;
+                return <DashboardOperacional service={selectedService} period={selectedPeriod} />;
             case 'pessoas':
                 return estatisticas ? <DashboardPessoas estatisticas={estatisticas} /> : <div className="text-center text-gray-500 py-10">Não foi possível carregar os dados.</div>;
             default:
