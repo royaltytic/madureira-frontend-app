@@ -43,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   }
 
   // 3. Constrói o menu final combinando os itens com base no tipo de usuário
-  const finalMenuItems = usuario.tipo === 'secretario'
+  const finalMenuItems = usuario.tipo === 'secretario' || usuario.tipo === 'desenvolvedor'
     ? [...commonMenuItems, ...adminOnlyMenuItems] // Se for secretário, mostra todos
     : commonMenuItems; // Senão, mostra apenas os comuns
 
