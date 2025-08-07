@@ -1,15 +1,15 @@
 import { BrowserRouter } from 'react-router-dom';
 import { MainRouter } from './routers/MainRouters';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext';
+// import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
     <>
       <BrowserRouter>
-        <AuthProvider>
+        {/* <AuthProvider> */}
           <MainRouter />
-        </AuthProvider>
+        {/* </AuthProvider> */}
       </BrowserRouter>
       <Toaster
         position="top-right"

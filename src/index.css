@@ -7,13 +7,7 @@
   width: 5px;
 }
 
-input, textarea {
-  text-transform: uppercase;
-}
 
-html, body, * {
-  text-transform: uppercase;
-}
 
 /* Track */
 ::-webkit-scrollbar-track {
