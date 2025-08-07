@@ -74,7 +74,7 @@ const TermosModal = ({ onClose }: { onClose: () => void }) => (
 
 
 // Componente principal do formulário
-const App = () => {
+const Cadastro = () => {
   const [formData, setFormData] = useState<FormData>(initialState);
   const [rgArquivo, setRgArquivo] = useState<File | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -363,4 +363,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default Cadastro;

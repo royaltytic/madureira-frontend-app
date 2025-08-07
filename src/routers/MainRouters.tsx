@@ -2,6 +2,7 @@
 
 import { useRoutes, Navigate } from "react-router-dom";
 import Cadastro from "../components/Cadastro";
+import { Alunos } from "../components/Alunos";
 
 // Componente de proteção de rota
 
@@ -9,6 +10,7 @@ export const MainRouter = () => {
   const routes = useRoutes([
     // Rota de login (pública)
     { path: "/", element: <Cadastro /> },
+    { path: "/", element: <Alunos /> },
 
     // // Rota de layout protegida. Todas as rotas aqui dentro exigem login.
     // {
