@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
+import { API_BASE_URL } from '../config/api';
 
 // Definição da interface para os dados do formulário
 interface FormData {
@@ -8,13 +9,14 @@ interface FormData {
   idade: string;
   cpf: string;
   rg: string;
+  rgImageUrl?: string;
   cidade: string;
   cep: string;
   telefone: string;
   email: string;
   escola: string;
   modalidades: string[];
-  turno: 'Manhã' | 'Tarde' | 'Noite' | '';
+  turno: 'Manha' | 'Tarde' | 'Noite' | '';
   temProblemaSaude: 'SIM' | 'NÃO' | '';
   problemaSaudeDetalhes: string;
   nomeResponsavel: string;
@@ -28,6 +30,7 @@ const initialState: FormData = {
   idade: '',
   cpf: '',
   rg: '',
+  rgImageUrl: '',
   cidade: '',
   cep: '',
   telefone: '',
@@ -129,19 +132,46 @@ const Cadastro = () => {
     setFormData(prev => ({ ...prev, aceiteTermos: e.target.checked }));
   };
 
+  const handleFileUpload = async (file: File, type: 'profile' | 'documento') => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const endpoint = `${API_BASE_URL}/uploads/${type}`;
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            body: formData,
+        });
+        if (!response.ok) throw new Error(`Falha no upload do ${type}`);
+        const result = await response.json();
+        return result.imgUrl;
+    } catch (uploadError) {
+        console.error(`Erro no upload:`, uploadError);
+        throw uploadError;
+    }
+};
+
   // Manipulador para a submissão do formulário
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
+    let rgUrl = '';
+
+    if(rgArquivo) {
+      rgUrl = await handleFileUpload(rgArquivo, 'documento');
+    }
+   
+
     const payload = {
       ...formData,
       temProblemaSaude: formData.temProblemaSaude === 'SIM',
-    };
-
+      rgImageUrl: rgUrl
+    }
+    
     try {
-      const response = await fetch('http://localhost:3333/users', {
+      const response = await fetch(`${API_BASE_URL}/alunos`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,24 +184,6 @@ const Cadastro = () => {
         throw new Error(errorData.message || `Erro ao criar aluno: ${response.status}`);
       }
       
-      const novoAluno = await response.json();
-      const alunoId = novoAluno.id;
-
-      if (alunoId && rgArquivo) {
-        const fileData = new FormData();
-        fileData.append('file', rgArquivo);
-
-        const uploadResponse = await fetch(`http://localhost:3333/upload/aluno/rg/${alunoId}`, {
-          method: 'POST',
-          body: fileData,
-        });
-
-        if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json().catch(() => ({}));
-          throw new Error(errorData.message || `Erro no upload do arquivo: ${uploadResponse.status}`);
-        }
-      }
-      
       setIsSubmitted(true);
 
     } catch (error) {
@@ -182,8 +194,8 @@ const Cadastro = () => {
     }
   };
 
-  const modalidadesOptions = ['Futebol', 'Ballet', 'Judô', 'Natação', 'Música'];
-  const turnoOptions = ['Manhã', 'Tarde', 'Noite'];
+  const modalidadesOptions = ['Futebol', 'Futsal', 'Queimada', 'Voleibol', 'Basquetebol', 'Handebol', 'Tênis de Mesa'];
+  const turnoOptions = ['Manha', 'Tarde', 'Noite'];
 
   if (isSubmitted) {
     return (
